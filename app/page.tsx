@@ -1,4 +1,5 @@
 "use client";
+import { FormEvent, useState } from "react";
 import { motion } from "framer-motion";
 import {
   CalendarDays,
@@ -12,7 +13,6 @@ import {
   MessageCircle,
   MessageSquare,
   Minus,
-  PlayCircle,
   Plus,
   Puzzle,
   Users,
@@ -40,6 +40,28 @@ const scaleIn = {
 };
 
 export default function Page() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [isEmailSubmitted, setIsEmailSubmitted] = useState(false);
+  const whatsappGroupUrl = "https://chat.whatsapp.com/ingles-por-el-exito";
+
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
+    setEmail("");
+    setIsEmailSubmitted(false);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEmail("");
+    setIsEmailSubmitted(false);
+  };
+
+  const handleSubmitEmail = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsEmailSubmitted(true);
+  };
+
   return (
     <section className="relative bg-white text-gray-900 antialiased overflow-hidden">
       {/* Decorative background blobs */}
@@ -84,20 +106,14 @@ export default function Page() {
             animate="show"
             className="flex items-center gap-3"
           >
-            <motion.a //@ts-expect-error bla
+            <motion.button //@ts-expect-error bla
               variants={fadeUp}
-              href="#precios"
+              type="button"
+              onClick={handleOpenModal}
               className="text-sm font-semibold leading-6 text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors"
             >
-              Acceder <span aria-hidden>→</span>
-            </motion.a>
-            <motion.a //@ts-expect-error bla
-              variants={fadeUp}
-              href="#suscripcion"
-              className="text-sm font-semibold leading-6 text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors hidden sm:inline-flex"
-            >
-              Suscribirme
-            </motion.a>
+              Reservar mi lugar
+            </motion.button>
           </motion.div>
         </div>
       </header>
@@ -132,67 +148,15 @@ export default function Page() {
                 variants={fadeUp}
                 className="mt-10 flex flex-wrap items-center justify-center gap-3"
               >
-                <a
-                  href="#precios"
+                <motion.button
+                  //@ts-expect-error bla
+                  variants={fadeUp}
+                  type="button"
+                  onClick={handleOpenModal}
                   className="rounded-md bg-accent px-5 py-3 text-sm font-semibold text-gray-900 shadow-sm hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-yellow-500 transition-all transform hover:scale-105"
                 >
-                  Quiero mi lugar ahora
-                </a>
-                <a
-                  href="#whatsapp"
-                  className="rounded-md bg-gray-900 text-white px-5 py-3 text-sm font-semibold shadow-sm hover:bg-black/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900 transition-all flex items-center gap-2"
-                >
-                  <MessageCircle className="h-4 w-4" /> Unirme al grupo de
-                  WhatsApp
-                </a>
-              </motion.div>
-
-              <motion.div //@ts-expect-error bla
-                variants={fadeUp}
-                className="mt-16 sm:mt-20"
-              >
-                <motion.div
-                  variants={scaleIn}
-                  className="w-full max-w-3xl mx-auto aspect-video bg-gray-900 rounded-2xl shadow-2xl flex items-center justify-center ring-1 ring-white/10"
-                >
-                  <div className="text-center text-gray-400">
-                    <PlayCircle className="mx-auto" />
-                    <p className="mt-2 font-semibold">
-                      Video de Venta (2-4 min)
-                    </p>
-                    <p className="text-sm">
-                      Tu video explicando el método va aquí.
-                    </p>
-                  </div>
-                </motion.div>
-
-                {/* Inline email subscribe CTA (Hero) */}
-                <motion.form
-                  id="suscripcion"
-                  variants={stagger}
-                  className="mt-8 max-w-xl mx-auto grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3"
-                  onSubmit={(e) => e.preventDefault()}
-                >
-                  <label htmlFor="email-hero" className="sr-only">
-                    Tu email
-                  </label>
-                  <motion.input //@ts-expect-error bla
-                    variants={fadeUp}
-                    id="email-hero"
-                    type="email"
-                    required
-                    placeholder="Tu email para reservar tu lugar"
-                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base outline-none focus:ring-2 focus:ring-accent/60 focus:border-accent"
-                  />
-                  <motion.button //@ts-expect-error bla
-                    variants={fadeUp}
-                    type="submit"
-                    className="rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-gray-900 shadow-sm hover:bg-accent-hover transition-all"
-                    aria-label="Suscribirme a las clases"
-                  >
-                    Suscribirme
-                  </motion.button>
-                </motion.form>
+                  Reservar mi lugar
+                </motion.button>
               </motion.div>
 
               {/* Trust badges (no nueva info) */}
@@ -212,12 +176,6 @@ export default function Page() {
                 >
                   Cupos limitados
                 </motion.li>
-                <motion.li //@ts-expect-error bla
-                  variants={fadeUp}
-                  className="px-3 py-1 rounded-full bg-gray-50 border border-gray-200"
-                >
-                  Garantía 7 días
-                </motion.li>
               </motion.ul>
             </motion.div>
           </div>
@@ -234,7 +192,7 @@ export default function Page() {
                 viewport={{ once: true }}
                 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl"
               >
-                ¿Es para vos este curso?
+                ¿Son para vos estas clases?
               </motion.h3>
               <motion.p //@ts-expect-error bla
                 variants={fadeUp}
@@ -244,7 +202,7 @@ export default function Page() {
                 className="mt-4 text-lg text-gray-600"
               >
                 Esto no es para todos. Diseñamos un entorno específico para un
-                tipo de alumno. Sé honesto con vos mismo.
+                tipo de alumno.
               </motion.p>
             </div>
 
@@ -550,8 +508,8 @@ export default function Page() {
           </div>
         </section>
 
-        {/* PRECIOS */}
-        <section id="precios" className="py-24 sm:py-32 bg-gray-50">
+        {/* CTA EMAIL + WHATSAPP */}
+        <section className="py-24 sm:py-32 bg-gray-50">
           <div className="container mx-auto px-6 max-w-3xl text-center">
             <motion.h3 //@ts-expect-error bla
               variants={fadeUp}
@@ -560,7 +518,7 @@ export default function Page() {
               viewport={{ once: true }}
               className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl"
             >
-              Empezá a hablar sin miedo hoy mismo.
+              Reservá tu lugar en la próxima cohorte
             </motion.h3>
             <motion.p //@ts-expect-error bla
               variants={fadeUp}
@@ -569,136 +527,29 @@ export default function Page() {
               viewport={{ once: true }}
               className="mt-4 text-lg text-gray-600"
             >
-              Elegí el plan que mejor se adapte a vos y reservá tu lugar.{" "}
-              <span className="font-semibold text-accent">
-                ¡Los cupos son limitados!
-              </span>
+              Dejanos tu email y te compartimos el acceso directo al grupo de
+              WhatsApp donde anunciamos los próximos cupos.
             </motion.p>
-
             <motion.div
               variants={scaleIn}
               initial="hidden"
               whileInView="show"
               viewport={{ once: true }}
-              className="mt-12 bg-white p-10 rounded-2xl shadow-2xl border border-accent max-w-lg mx-auto"
+              className="mt-10 flex justify-center"
             >
-              <span className="inline-flex items-center rounded-full bg-accent px-3 py-1 text-sm font-medium text-gray-900">
-                Programa Completo
-              </span>
-              <h4 className="text-4xl font-bold text-gray-900 mt-6">
-                $XXX.XXX ARS
-              </h4>
-              <p className="text-gray-500">Pago único por 3 meses</p>
-
-              <ul className="mt-8 space-y-3 text-left text-gray-700">
-                <li className="flex items-center gap-2">
-                  <Check />
-                  Acceso por 3 meses a clases grupales.
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check />2 sesiones semanales de 1 hora.
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check />
-                  Soporte prioritario por WhatsApp.
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check />
-                  Grupos reducidos (máx. 6 personas).
-                </li>
-              </ul>
-
-              <a
-                href="#"
-                className="mt-10 block w-full rounded-md bg-accent px-5 py-4 text-lg font-semibold text-gray-900 shadow-sm hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-yellow-500 transition-all transform hover:scale-105"
-              >
-                ¡QUIERO MI LUGAR!
-              </a>
-              <p className="mt-4 text-xs text-gray-500">
-                Garantía de satisfacción de 7 días.
-              </p>
-
-              {/* Secondary CTA inside pricing card */}
-              <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                <a
-                  href="#whatsapp"
-                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-3 text-sm font-semibold hover:bg-gray-50 transition"
-                >
-                  <MessageCircle className="h-4 w-4" /> Unirme al grupo de
-                  WhatsApp
-                </a>
-              </div>
-            </motion.div>
-
-            {/* Reassurance row */}
-            <motion.ul
-              variants={stagger}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true }}
-              className="mt-8 flex flex-wrap items-center justify-center gap-3 text-xs text-gray-600"
-            >
-              <motion.li //@ts-expect-error bla
+              <motion.button
+                //@ts-expect-error bla
                 variants={fadeUp}
-                className="px-3 py-1 rounded-full bg-white border"
+                type="button"
+                onClick={handleOpenModal}
+                className="rounded-md bg-accent px-6 py-3 text-sm font-semibold text-gray-900 shadow-sm hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-yellow-500 transition-all"
               >
-                Pago único
-              </motion.li>
-              <motion.li //@ts-expect-error bla
-                variants={fadeUp}
-                className="px-3 py-1 rounded-full bg-white border"
-              >
-                3 meses
-              </motion.li>
-              <motion.li //@ts-expect-error bla
-                variants={fadeUp}
-                className="px-3 py-1 rounded-full bg-white border"
-              >
-                Soporte WhatsApp
-              </motion.li>
-            </motion.ul>
-
-            {/* Email subscribe CTA (section) */}
-            <motion.div
-              variants={scaleIn}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true }}
-              className="mt-12"
-              id="suscripcion-section"
-            >
-              <div className="max-w-xl mx-auto bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-                <h5 className="text-lg font-semibold">
-                  Reservá prioridad con tu email
-                </h5>
-                <p className="text-sm text-gray-600 mt-1">
-                  Te avisamos apenas se libera un cupo o abre nueva cohorte.
-                </p>
-                <form
-                  className="mt-4 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3"
-                  onSubmit={(e) => e.preventDefault()}
-                >
-                  <label htmlFor="email-pricing" className="sr-only">
-                    Tu email
-                  </label>
-                  <input
-                    id="email-pricing"
-                    type="email"
-                    required
-                    placeholder="tu@email.com"
-                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base outline-none focus:ring-2 focus:ring-accent/60 focus:border-accent"
-                  />
-                  <button
-                    type="submit"
-                    className="rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-gray-900 shadow-sm hover:bg-accent-hover transition-all"
-                  >
-                    Quiero prioridad
-                  </button>
-                </form>
-              </div>
+                Entrar a la lista de espera
+              </motion.button>
             </motion.div>
           </div>
         </section>
+
 
         {/* FAQ */}
         <section className="py-24 sm:py-32">
@@ -775,33 +626,29 @@ export default function Page() {
       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-1.5rem)] sm:w-auto">
         <div className="mx-auto max-w-3xl rounded-2xl border border-gray-200 bg-white/90 backdrop-blur shadow-xl px-4 py-3 sm:flex sm:items-center sm:gap-4">
           <p className="text-sm text-gray-800 font-medium hidden sm:block">
-            ¿Listo para practicar? Reservá tu lugar o unite al grupo.
+            Anotate con tu email y recibí el enlace al grupo de WhatsApp.
           </p>
           <div className="mt-2 sm:mt-0 flex flex-wrap gap-2">
-            <a
-              href="#precios"
-              className="inline-flex items-center justify-center rounded-md bg-accent px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-accent-hover transition"
+            <button
+              type="button"
+              onClick={handleOpenModal}
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-accent-hover transition"
             >
-              Reservar lugar
-            </a>
-            <a
-              href="#whatsapp"
-              className="inline-flex items-center justify-center gap-2 rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold hover:bg-gray-50 transition"
-            >
-              <MessageCircle className="h-4 w-4" /> WhatsApp
-            </a>
+              <MessageCircle className="h-4 w-4" /> Reservar mi lugar
+            </button>
           </div>
         </div>
       </div>
 
       {/* Floating WhatsApp button (mobile friendly) */}
-      <a
-        href="#whatsapp"
+      <button
+        type="button"
+        onClick={handleOpenModal}
         aria-label="Unirme al grupo de WhatsApp"
         className="fixed bottom-24 right-4 z-40 inline-flex h-12 w-12 items-center justify-center rounded-full bg-green-500 text-white shadow-lg hover:scale-105 transition sm:hidden"
       >
         <MessageCircle />
-      </a>
+      </button>
 
       <footer className="bg-gray-900 text-gray-400 relative z-10 mt-24">
         <div className="container mx-auto px-6 py-12 grid gap-8 md:grid-cols-2 items-center">
@@ -866,6 +713,81 @@ export default function Page() {
           </div>
         </div>
       </footer>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 sm:px-6">
+          <div
+            className="absolute inset-0 bg-gray-900/60"
+            onClick={handleCloseModal}
+            aria-hidden
+          />
+          <motion.div
+            //@ts-expect-error bla
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+            role="dialog"
+            aria-modal="true"
+            className="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+          >
+            <button
+              type="button"
+              onClick={handleCloseModal}
+              className="absolute right-4 top-4 text-gray-400 hover:text-gray-600"
+              aria-label="Cerrar"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <h3 className="text-xl font-semibold text-gray-900">
+              Reservá tu lugar
+            </h3>
+            <p className="mt-2 text-sm text-gray-600">
+              Ingresá tu email para recibir el enlace directo al grupo de WhatsApp.
+            </p>
+            {!isEmailSubmitted ? (
+              <form onSubmit={handleSubmitEmail} className="mt-6 space-y-4">
+                <div>
+                  <label htmlFor="modal-email" className="sr-only">
+                    Tu email
+                  </label>
+                  <input
+                    id="modal-email"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    placeholder="tu@email.com"
+                    autoFocus
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base outline-none focus:ring-2 focus:ring-accent/60 focus:border-accent"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="w-full rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-gray-900 shadow-sm hover:bg-accent-hover transition"
+                >
+                  Enviarme el enlace
+                </button>
+              </form>
+            ) : (
+              <div className="mt-6 space-y-4">
+                <div className="rounded-xl bg-gray-50 p-4 text-left text-sm text-gray-700">
+                  <p>
+                    ¡Gracias! Revisá tu correo y unite al grupo para enterarte primero cuando abramos nuevos cupos.
+                  </p>
+                </div>
+                <a
+                  href={whatsappGroupUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-green-500 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-green-600 transition"
+                >
+                  <MessageCircle className="h-4 w-4" /> Ir al grupo de WhatsApp
+                </a>
+              </div>
+            )}
+          </motion.div>
+        </div>
+      )}
     </section>
   );
 }
