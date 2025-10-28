@@ -12,3 +12,106 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum ContactStatus {
+  LEAD
+  ACTIVE
+  CHURNED
+}
+
+enum DealStage {
+  QUALIFICATION
+  NEEDS_ANALYSIS
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum TaskStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model Company {
+  id        String    @id @default(cuid())
+  name      String
+  industry  String?
+  website   String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  contacts  Contact[]
+  deals     Deal[]
+}
+
+model Contact {
+  id            String          @id @default(cuid())
+  firstName     String
+  lastName      String
+  email         String          @unique
+  phone         String?
+  status        ContactStatus   @default(LEAD)
+  position      String?
+  source        String?
+  notes         String?
+  company       Company?        @relation(fields: [companyId], references: [id])
+  companyId     String?
+  deals         Deal[]
+  tasks         Task[]
+  interactions  Interaction[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+model Deal {
+  id             String        @id @default(cuid())
+  title          String
+  value          Int           @default(0)
+  stage          DealStage     @default(QUALIFICATION)
+  probability    Int?
+  expectedClose  DateTime?
+  notes          String?
+  contact        Contact       @relation(fields: [contactId], references: [id])
+  contactId      String
+  company        Company?      @relation(fields: [companyId], references: [id])
+  companyId      String?
+  tasks          Task[]
+  interactions   Interaction[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model Task {
+  id          String      @id @default(cuid())
+  title       String
+  description String?
+  dueDate     DateTime?
+  status      TaskStatus  @default(OPEN)
+  priority    TaskPriority @default(MEDIUM)
+  contact     Contact?    @relation(fields: [contactId], references: [id])
+  contactId   String?
+  deal        Deal?       @relation(fields: [dealId], references: [id])
+  dealId      String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Interaction {
+  id          String   @id @default(cuid())
+  channel     String
+  summary     String
+  occurredAt  DateTime @default(now())
+  contact     Contact? @relation(fields: [contactId], references: [id])
+  contactId   String?
+  deal        Deal?    @relation(fields: [dealId], references: [id])
+  dealId      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
