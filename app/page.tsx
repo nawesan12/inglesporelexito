@@ -478,8 +478,8 @@ export default function Page() {
                 initial="hidden"
                 whileInView="show"
                 viewport={{ once: true }}
-                className="w-32 h-32 rounded-full mx-auto shadow-lg"
-                src="https://placehold.co/200x200/FACC15/333?text=MI"
+                className="w-44 h-44 rounded-full mx-auto object-cover shadow-lg"
+                src="/a.jpeg"
                 alt="Foto de Martín Ibarra"
               />
               <motion.h3 //@ts-expect-error bla
