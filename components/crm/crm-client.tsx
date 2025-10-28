@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState, FormEvent } from "react";
 import {
   CRMContact,
   CRMDeal,
+  CRMInteraction,
   CRMOverview,
   CRMTask,
   CONTACT_STATUS_OPTIONS,
@@ -16,7 +17,7 @@ interface CRMClientProps {
   initialData: CRMOverview;
 }
 
-type ViewMode = "pipeline" | "contacts" | "tasks";
+type ViewMode = "pipeline" | "contacts" | "tasks" | "interactions";
 
 const PIPELINE_STAGES: Array<CRMDeal["stage"]> = [
   "QUALIFICATION",
@@ -36,6 +37,9 @@ export function CRMClient({ initialData }: CRMClientProps) {
   const [contacts, setContacts] = useState<CRMContact[]>(initialData.contacts);
   const [deals, setDeals] = useState<CRMDeal[]>(initialData.deals);
   const [tasks, setTasks] = useState<CRMTask[]>(initialData.tasks);
+  const [interactions, setInteractions] = useState<CRMInteraction[]>(
+    initialData.interactions
+  );
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [view, setView] = useState<ViewMode>("pipeline");
@@ -51,14 +55,21 @@ export function CRMClient({ initialData }: CRMClientProps) {
       if (task.status === "COMPLETED") return false;
       return new Date(task.dueDate).getTime() < Date.now();
     });
+    const recentInteractions = interactions.filter((interaction) => {
+      const occurredAt = new Date(interaction.occurredAt);
+      if (Number.isNaN(occurredAt.getTime())) return false;
+      const cutoff = Date.now() - 14 * 24 * 60 * 60 * 1000;
+      return occurredAt.getTime() >= cutoff;
+    });
 
     return {
       totalPipelineValue,
       openDeals: openDeals.length,
       activeContacts: activeContacts.length,
       overdueTasks: overdueTasks.length,
+      recentInteractions: recentInteractions.length,
     };
-  }, [contacts, deals, tasks]);
+  }, [contacts, deals, tasks, interactions]);
 
   const handleSubmit = useCallback(async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -122,6 +133,15 @@ export function CRMClient({ initialData }: CRMClientProps) {
         });
       }
 
+      if ("interaction" in data) {
+        setInteractions((prev) => {
+          const otherInteractions = prev.filter(
+            (interaction) => interaction.id !== data.interaction.id
+          );
+          return [data.interaction, ...otherInteractions];
+        });
+      }
+
       setFeedback({ type: "success", message: "Cambios guardados con éxito" });
       event.currentTarget.reset();
     } catch (error) {
@@ -163,6 +183,13 @@ export function CRMClient({ initialData }: CRMClientProps) {
         setTasks((prev) => prev.filter((task) => task.id !== id));
       }
 
+      if (endpoint.includes("/interactions/")) {
+        const id = endpoint.split("/interactions/")[1];
+        setInteractions((prev) =>
+          prev.filter((interaction) => interaction.id !== id)
+        );
+      }
+
       setFeedback({ type: "success", message: "Registro eliminado" });
     } catch (error) {
       console.error(error);
@@ -184,11 +211,12 @@ export function CRMClient({ initialData }: CRMClientProps) {
             lugar. Todo lo que necesitás para acompañar a tus estudiantes potenciales.
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
           <MetricCard label="Valor del pipeline" value={`$${summary.totalPipelineValue.toLocaleString("es-AR")}`} />
           <MetricCard label="Deals abiertos" value={summary.openDeals.toString()} />
           <MetricCard label="Contactos activos" value={summary.activeContacts.toString()} />
           <MetricCard label="Tareas vencidas" value={summary.overdueTasks.toString()} highlight={summary.overdueTasks > 0} />
+          <MetricCard label="Interacciones 14 días" value={summary.recentInteractions.toString()} />
         </div>
       </header>
 
@@ -199,6 +227,7 @@ export function CRMClient({ initialData }: CRMClientProps) {
               { id: "pipeline" as ViewMode, label: "Pipeline" },
               { id: "contacts" as ViewMode, label: "Contactos" },
               { id: "tasks" as ViewMode, label: "Tareas" },
+              { id: "interactions" as ViewMode, label: "Interacciones" },
             ].map((item) => (
               <button
                 key={item.id}
@@ -230,6 +259,9 @@ export function CRMClient({ initialData }: CRMClientProps) {
           {view === "pipeline" && <PipelineView deals={deals} onDelete={handleDelete} />}
           {view === "contacts" && <ContactsView contacts={contacts} onDelete={handleDelete} />}
           {view === "tasks" && <TasksView tasks={tasks} onDelete={handleDelete} />}
+          {view === "interactions" && (
+            <InteractionsView interactions={interactions} onDelete={handleDelete} />
+          )}
         </div>
 
         <aside className="space-y-6">
@@ -281,6 +313,36 @@ export function CRMClient({ initialData }: CRMClientProps) {
               <TextField label="Vencimiento" name="dueDate" type="date" />
               <SelectField label="Estado" name="status" options={TASK_STATUS_OPTIONS} />
               <SelectField label="Prioridad" name="priority" options={TASK_PRIORITY_OPTIONS} />
+              <SelectField
+                label="Contacto"
+                name="contactId"
+                options={contacts.map((contact) => ({
+                  label: `${contact.firstName} ${contact.lastName}`,
+                  value: contact.id,
+                }))}
+              />
+              <SelectField
+                label="Oportunidad"
+                name="dealId"
+                options={deals.map((deal) => ({
+                  label: deal.title,
+                  value: deal.id,
+                }))}
+              />
+            </div>
+          </ActionCard>
+
+          <ActionCard
+            title="Nueva interacción"
+            description="Registrá los últimos contactos con estudiantes o empresas."
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+          >
+            <input type="hidden" name="endpoint" value="/api/crm/interactions" />
+            <div className="grid gap-3">
+              <TextField label="Canal" name="channel" placeholder="Email, Llamada, WhatsApp..." required />
+              <TextAreaField label="Resumen" name="summary" rows={3} required />
+              <TextField label="Fecha y hora" name="occurredAt" type="datetime-local" />
               <SelectField
                 label="Contacto"
                 name="contactId"
@@ -625,6 +687,75 @@ function TasksView({ tasks, onDelete }: TasksViewProps) {
             </dl>
           </article>
         ))
+      )}
+    </div>
+  );
+}
+
+interface InteractionsViewProps {
+  interactions: CRMInteraction[];
+  onDelete: (endpoint: string) => Promise<void> | void;
+}
+
+function InteractionsView({ interactions, onDelete }: InteractionsViewProps) {
+  return (
+    <div className="space-y-3">
+      {interactions.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500">
+          Todavía no registraste interacciones. Sumá la primera para hacer seguimiento.
+        </div>
+      ) : (
+        interactions.map((interaction) => {
+          const occurredAt = new Date(interaction.occurredAt);
+          return (
+            <article
+              key={interaction.id}
+              className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+            >
+              <header className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {interaction.channel}
+                  </p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    {Number.isNaN(occurredAt.getTime())
+                      ? "Fecha no disponible"
+                      : occurredAt.toLocaleString("es-AR", {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        })}
+                  </p>
+                </div>
+                <button
+                  onClick={() =>
+                    onDelete(`/api/crm/interactions/${interaction.id}`)
+                  }
+                  className="text-xs font-medium text-red-500 hover:text-red-600"
+                  type="button"
+                >
+                  Eliminar
+                </button>
+              </header>
+              <p className="mt-3 text-sm text-gray-700">{interaction.summary}</p>
+              <dl className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-gray-600">
+                {interaction.contact ? (
+                  <div>
+                    <dt className="font-medium text-gray-500">Contacto</dt>
+                    <dd>
+                      {interaction.contact.firstName} {interaction.contact.lastName}
+                    </dd>
+                  </div>
+                ) : null}
+                {interaction.deal ? (
+                  <div>
+                    <dt className="font-medium text-gray-500">Oportunidad</dt>
+                    <dd>{interaction.deal.title}</dd>
+                  </div>
+                ) : null}
+              </dl>
+            </article>
+          );
+        })
       )}
     </div>
   );

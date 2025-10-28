@@ -4,8 +4,14 @@ import { ContactStatus, DealStage, TaskStatus } from "@prisma/client";
 
 export async function GET() {
   try {
-    const [totalContacts, activeContacts, openDeals, wonDealsValue, overdueTasks] =
-      await Promise.all([
+    const [
+      totalContacts,
+      activeContacts,
+      openDeals,
+      wonDealsValue,
+      overdueTasks,
+      recentInteractions,
+    ] = await Promise.all([
         prisma.contact.count(),
         prisma.contact.count({ where: { status: ContactStatus.ACTIVE } }),
         prisma.deal.count({
@@ -21,6 +27,13 @@ export async function GET() {
             dueDate: { lt: new Date() },
           },
         }),
+        prisma.interaction.count({
+          where: {
+            occurredAt: {
+              gte: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+            },
+          },
+        }),
       ]);
 
     return NextResponse.json({
@@ -30,6 +43,7 @@ export async function GET() {
         openDeals,
         wonDealsValue: wonDealsValue._sum.value ?? 0,
         overdueTasks,
+        recentInteractions,
       },
     });
   } catch (error) {

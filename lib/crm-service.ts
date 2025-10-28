@@ -7,7 +7,7 @@ import {
 } from "@prisma/client";
 
 export async function getCRMOverview() {
-  const [contacts, deals, tasks] = await Promise.all([
+  const [contacts, deals, tasks, interactions] = await Promise.all([
     prisma.contact.findMany({
       include: {
         company: true,
@@ -53,6 +53,25 @@ export async function getCRMOverview() {
         { createdAt: "desc" },
       ],
     }),
+    prisma.interaction.findMany({
+      include: {
+        contact: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        deal: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+      },
+      orderBy: { occurredAt: "desc" },
+    }),
   ]);
 
   const totalPipelineValue = deals.reduce((sum, deal) => sum + deal.value, 0);
@@ -67,16 +86,23 @@ export async function getCRMOverview() {
     if (task.status === TaskStatus.COMPLETED) return false;
     return task.dueDate.getTime() < Date.now();
   });
+  const recentInteractions = interactions.filter((interaction) => {
+    const occurredAt = interaction.occurredAt;
+    const cutoff = Date.now() - 14 * 24 * 60 * 60 * 1000;
+    return occurredAt.getTime() >= cutoff;
+  });
 
   return {
     contacts,
     deals,
     tasks,
+    interactions,
     summary: {
       totalPipelineValue,
       openDeals: openDeals.length,
       activeContacts: activeContacts.length,
       overdueTasks: overdueTasks.length,
+      recentInteractions: recentInteractions.length,
     },
   };
 }
