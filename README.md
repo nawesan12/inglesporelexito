@@ -16,9 +16,28 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## CRM End-to-End
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Además de la landing principal (`/`), la aplicación ahora incluye un panel CRM completo disponible en [`/crm`](http://localhost:3000/crm). Desde allí podés:
+
+- Registrar y editar leads o estudiantes potenciales.
+- Gestionar el pipeline de oportunidades con etapas configurables.
+- Crear tareas de seguimiento vinculadas a contactos y deals.
+- Visualizar métricas clave del pipeline y recordatorios pendientes.
+
+### Configuración de la base de datos
+
+El CRM utiliza Prisma y PostgreSQL. Antes de levantar el proyecto asegurate de:
+
+1. Definir la variable de entorno `DATABASE_URL` con la cadena de conexión a tu base de datos PostgreSQL.
+2. Ejecutar las migraciones y generar el cliente de Prisma:
+
+   ```bash
+   npx prisma migrate dev
+   npx prisma generate
+   ```
+
+Con eso ya vas a poder crear, consultar y actualizar datos reales desde el panel.
 
 ## Learn More
 
