@@ -92,7 +92,7 @@ export default function Page() {
 
       <header className="relative border-b border-gray-200/70 backdrop-blur supports-[backdrop-filter]:bg-white/60">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-          <motion.h1 //@ts-expect-error bla
+          <motion.h1
             variants={fadeUp}
             initial="hidden"
             animate="show"
@@ -106,7 +106,7 @@ export default function Page() {
             animate="show"
             className="flex items-center gap-3"
           >
-            <motion.button //@ts-expect-error bla
+            <motion.button
               variants={fadeUp}
               type="button"
               onClick={handleOpenModal}
@@ -128,14 +128,14 @@ export default function Page() {
               whileInView="show"
               viewport={{ once: true, amount: 0.3 }}
             >
-              <motion.h2 //@ts-expect-error bla
+              <motion.h2
                 variants={fadeUp}
                 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl"
               >
                 Destrabá tu inglés.{" "}
                 <span className="text-accent">Hablá con confianza.</span>
               </motion.h2>
-              <motion.p //@ts-expect-error bla
+              <motion.p
                 variants={fadeUp}
                 className="mt-6 text-lg leading-8 text-gray-600 max-w-2xl mx-auto"
               >
@@ -144,12 +144,11 @@ export default function Page() {
                 que por fin puedas soltarte y tener conversaciones fluidas. Sin
                 miedo, sin juicios, solo práctica real.
               </motion.p>
-              <motion.div //@ts-expect-error bla
+              <motion.div
                 variants={fadeUp}
                 className="mt-10 flex flex-wrap items-center justify-center gap-3"
               >
                 <motion.button
-                  //@ts-expect-error bla
                   variants={fadeUp}
                   type="button"
                   onClick={handleOpenModal}
@@ -164,13 +163,13 @@ export default function Page() {
                 variants={stagger}
                 className="mt-10 flex flex-wrap items-center justify-center gap-3 text-sm text-gray-600"
               >
-                <motion.li //@ts-expect-error bla
+                <motion.li
                   variants={fadeUp}
                   className="px-3 py-1 rounded-full bg-gray-50 border border-gray-200"
                 >
                   Grupos reducidos
                 </motion.li>
-                <motion.li //@ts-expect-error bla
+                <motion.li
                   variants={fadeUp}
                   className="px-3 py-1 rounded-full bg-gray-50 border border-gray-200"
                 >
@@ -185,7 +184,7 @@ export default function Page() {
         <section className="py-24 sm:py-32 bg-gray-50/80">
           <div className="container mx-auto px-6 max-w-6xl">
             <div className="mx-auto max-w-3xl text-center">
-              <motion.h3 //@ts-expect-error bla
+              <motion.h3
                 variants={fadeUp}
                 initial="hidden"
                 whileInView="show"
@@ -194,7 +193,7 @@ export default function Page() {
               >
                 ¿Son para vos estas clases?
               </motion.h3>
-              <motion.p //@ts-expect-error bla
+              <motion.p
                 variants={fadeUp}
                 initial="hidden"
                 whileInView="show"
@@ -317,7 +316,7 @@ export default function Page() {
         <section className="py-24 sm:py-32">
           <div className="container mx-auto px-6 max-w-5xl">
             <div className="text-center">
-              <motion.h3 //@ts-expect-error bla
+              <motion.h3
                 variants={fadeUp}
                 initial="hidden"
                 whileInView="show"
@@ -326,7 +325,7 @@ export default function Page() {
               >
                 ¿Qué vas a obtener?
               </motion.h3>
-              <motion.p //@ts-expect-error bla
+              <motion.p
                 variants={fadeUp}
                 initial="hidden"
                 whileInView="show"
@@ -394,7 +393,7 @@ export default function Page() {
                 <span className="text-sm font-semibold uppercase tracking-wider text-accent">
                   NUESTRA METODOLOGÍA
                 </span>
-                <motion.h3 //@ts-expect-error bla
+                <motion.h3
                   variants={fadeUp}
                   initial="hidden"
                   whileInView="show"
@@ -403,7 +402,7 @@ export default function Page() {
                 >
                   Clases Dinámicas. Cero Aburrimiento.
                 </motion.h3>
-                <motion.p //@ts-expect-error bla
+                <motion.p
                   variants={fadeUp}
                   initial="hidden"
                   whileInView="show"
@@ -414,7 +413,7 @@ export default function Page() {
                   estás hablando. Cada sesión está diseñada para maximizar tu
                   participación.
                 </motion.p>
-                <motion.p //@ts-expect-error bla
+                <motion.p
                   variants={fadeUp}
                   initial="hidden"
                   whileInView="show"
@@ -480,7 +479,7 @@ export default function Page() {
                 src="https://placehold.co/200x200/FACC15/333?text=MI"
                 alt="Foto de Martín Ibarra"
               />
-              <motion.h3 //@ts-expect-error bla
+              <motion.h3
                 variants={fadeUp}
                 initial="hidden"
                 whileInView="show"
@@ -489,7 +488,7 @@ export default function Page() {
               >
                 Conocé a tu profesor
               </motion.h3>
-              <motion.p //@ts-expect-error bla
+              <motion.p
                 variants={fadeUp}
                 initial="hidden"
                 whileInView="show"
@@ -511,7 +510,7 @@ export default function Page() {
         {/* CTA EMAIL + WHATSAPP */}
         <section className="py-24 sm:py-32 bg-gray-50">
           <div className="container mx-auto px-6 max-w-3xl text-center">
-            <motion.h3 //@ts-expect-error bla
+            <motion.h3
               variants={fadeUp}
               initial="hidden"
               whileInView="show"
@@ -520,7 +519,7 @@ export default function Page() {
             >
               Reservá tu lugar en la próxima cohorte
             </motion.h3>
-            <motion.p //@ts-expect-error bla
+            <motion.p
               variants={fadeUp}
               initial="hidden"
               whileInView="show"
@@ -538,7 +537,6 @@ export default function Page() {
               className="mt-10 flex justify-center"
             >
               <motion.button
-                //@ts-expect-error bla
                 variants={fadeUp}
                 type="button"
                 onClick={handleOpenModal}
@@ -555,7 +553,6 @@ export default function Page() {
         <section className="py-24 sm:py-32">
           <div className="container mx-auto px-6 max-w-3xl">
             <motion.h2
-              //@ts-expect-error bla
               variants={fadeUp}
               initial="hidden"
               whileInView="show"
@@ -722,7 +719,6 @@ export default function Page() {
             aria-hidden
           />
           <motion.div
-            //@ts-expect-error bla
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25 }}
