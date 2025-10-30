@@ -70,8 +70,9 @@ export async function getCRMOverview() {
   ]);
 
   const totalPipelineValue = deals.reduce((sum, deal) => sum + deal.value, 0);
+  const closedStages: DealStage[] = [DealStage.WON, DealStage.LOST];
   const openDeals = deals.filter(
-    (deal) => ![DealStage.WON, DealStage.LOST].includes(deal.stage)
+    (deal) => !closedStages.includes(deal.stage)
   );
   const activeContacts = contacts.filter(
     (contact) => contact.status === ContactStatus.ACTIVE
