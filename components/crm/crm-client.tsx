@@ -105,7 +105,7 @@ export function CRMClient({ initialData }: CRMClientProps) {
 
     const payload = Object.fromEntries(
       Array.from(form.entries()).filter(([key]) => !["endpoint", "method"].includes(key))
-    );
+    ) as Record<string, FormDataEntryValue | undefined>;
 
     // Clean up empty strings so that the API can handle optional values gracefully
     Object.keys(payload).forEach((key) => {
