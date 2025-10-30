@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ContactStatus } from "@/generated/client";
 
+const STATUS_VALUES = new Set(Object.values(ContactStatus));
+
 function sanitizeString(value: unknown) {
   if (typeof value !== "string") return undefined;
   const trimmed = value.trim();
@@ -91,7 +93,8 @@ export async function POST(request: Request) {
     }
 
     const status =
-      typeof payload.status === "string" && payload.status in ContactStatus
+      typeof payload.status === "string" &&
+      STATUS_VALUES.has(payload.status as ContactStatus)
         ? (payload.status as ContactStatus)
         : ContactStatus.LEAD;
 
