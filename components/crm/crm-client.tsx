@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState, FormEvent } from "react";
+import { useCallback, useMemo, useState, FormEvent, ChangeEvent } from "react";
 import {
   CRMContact,
   CRMDeal,
@@ -18,6 +18,7 @@ interface CRMClientProps {
 }
 
 type ViewMode = "pipeline" | "contacts" | "tasks" | "interactions";
+type TaskFilter = CRMTask["status"] | "ALL";
 
 const PIPELINE_STAGES: Array<CRMDeal["stage"]> = [
   "QUALIFICATION",
@@ -28,6 +29,43 @@ const PIPELINE_STAGES: Array<CRMDeal["stage"]> = [
   "LOST",
 ];
 
+type CRMEntityResponse = Partial<{
+  contact: CRMContact;
+  deal: CRMDeal;
+  task: CRMTask;
+  interaction: CRMInteraction;
+}>;
+
+const TASK_STATUS_ORDER: Record<CRMTask["status"], number> = {
+  OPEN: 0,
+  IN_PROGRESS: 1,
+  COMPLETED: 2,
+};
+
+function sortTasks(tasks: CRMTask[]) {
+  return [...tasks].sort((taskA, taskB) => {
+    const statusDiff =
+      TASK_STATUS_ORDER[taskA.status] - TASK_STATUS_ORDER[taskB.status];
+    if (statusDiff !== 0) return statusDiff;
+
+    const dueDateA = taskA.dueDate ? new Date(taskA.dueDate).getTime() : Number.POSITIVE_INFINITY;
+    const dueDateB = taskB.dueDate ? new Date(taskB.dueDate).getTime() : Number.POSITIVE_INFINITY;
+    if (dueDateA !== dueDateB) return dueDateA - dueDateB;
+
+    const createdAtA = new Date(taskA.createdAt).getTime();
+    const createdAtB = new Date(taskB.createdAt).getTime();
+    return createdAtB - createdAtA;
+  });
+}
+
+function sortInteractions(interactions: CRMInteraction[]) {
+  return [...interactions].sort((interactionA, interactionB) => {
+    const occurredAtA = new Date(interactionA.occurredAt).getTime();
+    const occurredAtB = new Date(interactionB.occurredAt).getTime();
+    return occurredAtB - occurredAtA;
+  });
+}
+
 type FeedbackState = {
   type: "success" | "error";
   message: string;
@@ -36,13 +74,17 @@ type FeedbackState = {
 export function CRMClient({ initialData }: CRMClientProps) {
   const [contacts, setContacts] = useState<CRMContact[]>(initialData.contacts);
   const [deals, setDeals] = useState<CRMDeal[]>(initialData.deals);
-  const [tasks, setTasks] = useState<CRMTask[]>(initialData.tasks);
+  const [tasks, setTasks] = useState<CRMTask[]>(() =>
+    sortTasks(initialData.tasks)
+  );
   const [interactions, setInteractions] = useState<CRMInteraction[]>(
     initialData.interactions
   );
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [view, setView] = useState<ViewMode>("pipeline");
+  const [taskFilter, setTaskFilter] = useState<TaskFilter>("OPEN");
+  const [taskUpdatingId, setTaskUpdatingId] = useState<string | null>(null);
 
   const summary = useMemo(() => {
     const totalPipelineValue = deals.reduce((sum, deal) => sum + deal.value, 0);
@@ -70,6 +112,40 @@ export function CRMClient({ initialData }: CRMClientProps) {
       recentInteractions: recentInteractions.length,
     };
   }, [contacts, deals, tasks, interactions]);
+
+  const applyCRMUpdates = useCallback((data: CRMEntityResponse) => {
+    const { contact, deal, task, interaction } = data;
+
+    if (contact) {
+      setContacts((prev) => {
+        const otherContacts = prev.filter((item) => item.id !== contact.id);
+        return [contact, ...otherContacts];
+      });
+    }
+
+    if (deal) {
+      setDeals((prev) => {
+        const otherDeals = prev.filter((item) => item.id !== deal.id);
+        return [deal, ...otherDeals];
+      });
+    }
+
+    if (task) {
+      setTasks((prev) => {
+        const otherTasks = prev.filter((item) => item.id !== task.id);
+        return sortTasks([task, ...otherTasks]);
+      });
+    }
+
+    if (interaction) {
+      setInteractions((prev) => {
+        const otherInteractions = prev.filter(
+          (item) => item.id !== interaction.id
+        );
+        return sortInteractions([interaction, ...otherInteractions]);
+      });
+    }
+  }, []);
 
   const handleSubmit = useCallback(async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -112,35 +188,7 @@ export function CRMClient({ initialData }: CRMClientProps) {
         throw new Error(data.error ?? "No se pudo completar la acción");
       }
 
-      if ("contact" in data) {
-        setContacts((prev) => {
-          const otherContacts = prev.filter((contact) => contact.id !== data.contact.id);
-          return [data.contact, ...otherContacts];
-        });
-      }
-
-      if ("deal" in data) {
-        setDeals((prev) => {
-          const otherDeals = prev.filter((deal) => deal.id !== data.deal.id);
-          return [data.deal, ...otherDeals];
-        });
-      }
-
-      if ("task" in data) {
-        setTasks((prev) => {
-          const otherTasks = prev.filter((task) => task.id !== data.task.id);
-          return [data.task, ...otherTasks];
-        });
-      }
-
-      if ("interaction" in data) {
-        setInteractions((prev) => {
-          const otherInteractions = prev.filter(
-            (interaction) => interaction.id !== data.interaction.id
-          );
-          return [data.interaction, ...otherInteractions];
-        });
-      }
+      applyCRMUpdates(data as CRMEntityResponse);
 
       setFeedback({ type: "success", message: "Cambios guardados con éxito" });
       event.currentTarget.reset();
@@ -154,7 +202,49 @@ export function CRMClient({ initialData }: CRMClientProps) {
     } finally {
       setIsSubmitting(false);
     }
-  }, []);
+  }, [applyCRMUpdates]);
+
+  const handleTaskStatusChange = useCallback(
+    async (taskId: string, status: CRMTask["status"]) => {
+      setFeedback(null);
+      setTaskUpdatingId(taskId);
+      try {
+        const response = await fetch(`/api/crm/tasks/${taskId}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error ?? "No se pudo actualizar la tarea");
+        }
+
+        applyCRMUpdates(data as CRMEntityResponse);
+        setFeedback({
+          type: "success",
+          message:
+            status === "COMPLETED"
+              ? "Tarea marcada como completada"
+              : "Estado de la tarea actualizado",
+        });
+      } catch (error) {
+        console.error(error);
+        setFeedback({
+          type: "error",
+          message:
+            error instanceof Error
+              ? error.message
+              : "No se pudo actualizar la tarea",
+        });
+      } finally {
+        setTaskUpdatingId(null);
+      }
+    },
+    [applyCRMUpdates]
+  );
 
   const handleDelete = useCallback(async (endpoint: string) => {
     setFeedback(null);
@@ -165,32 +255,44 @@ export function CRMClient({ initialData }: CRMClientProps) {
         throw new Error(data.error ?? "No se pudo eliminar el registro");
       }
 
+      let successMessage = "Registro eliminado";
+
       if (endpoint.includes("/contacts/")) {
         const id = endpoint.split("/contacts/")[1];
         setContacts((prev) => prev.filter((contact) => contact.id !== id));
         setDeals((prev) => prev.filter((deal) => deal.contactId !== id));
-        setTasks((prev) => prev.filter((task) => task.contactId !== id));
+        setTasks((prev) =>
+          sortTasks(prev.filter((task) => task.contactId !== id))
+        );
+        successMessage = "Contacto eliminado";
       }
 
       if (endpoint.includes("/deals/")) {
         const id = endpoint.split("/deals/")[1];
         setDeals((prev) => prev.filter((deal) => deal.id !== id));
-        setTasks((prev) => prev.filter((task) => task.dealId !== id));
+        setTasks((prev) =>
+          sortTasks(prev.filter((task) => task.dealId !== id))
+        );
+        successMessage = "Oportunidad eliminada";
       }
 
       if (endpoint.includes("/tasks/")) {
         const id = endpoint.split("/tasks/")[1];
-        setTasks((prev) => prev.filter((task) => task.id !== id));
+        setTasks((prev) => sortTasks(prev.filter((task) => task.id !== id)));
+        successMessage = "Tarea eliminada";
       }
 
       if (endpoint.includes("/interactions/")) {
         const id = endpoint.split("/interactions/")[1];
         setInteractions((prev) =>
-          prev.filter((interaction) => interaction.id !== id)
+          sortInteractions(
+            prev.filter((interaction) => interaction.id !== id)
+          )
         );
+        successMessage = "Interacción eliminada";
       }
 
-      setFeedback({ type: "success", message: "Registro eliminado" });
+      setFeedback({ type: "success", message: successMessage });
     } catch (error) {
       console.error(error);
       setFeedback({
@@ -258,7 +360,16 @@ export function CRMClient({ initialData }: CRMClientProps) {
 
           {view === "pipeline" && <PipelineView deals={deals} onDelete={handleDelete} />}
           {view === "contacts" && <ContactsView contacts={contacts} onDelete={handleDelete} />}
-          {view === "tasks" && <TasksView tasks={tasks} onDelete={handleDelete} />}
+          {view === "tasks" && (
+            <TasksView
+              tasks={tasks}
+              onDelete={handleDelete}
+              onUpdateStatus={handleTaskStatusChange}
+              filter={taskFilter}
+              onFilterChange={(nextFilter) => setTaskFilter(nextFilter)}
+              updatingTaskId={taskUpdatingId}
+            />
+          )}
           {view === "interactions" && (
             <InteractionsView interactions={interactions} onDelete={handleDelete} />
           )}
@@ -628,65 +739,186 @@ function ContactsView({ contacts, onDelete }: ContactsViewProps) {
 interface TasksViewProps {
   tasks: CRMTask[];
   onDelete: (endpoint: string) => Promise<void> | void;
+  onUpdateStatus: (taskId: string, status: CRMTask["status"]) => Promise<void> | void;
+  filter: TaskFilter;
+  onFilterChange: (filter: TaskFilter) => void;
+  updatingTaskId: string | null;
 }
 
-function TasksView({ tasks, onDelete }: TasksViewProps) {
+function TasksView({
+  tasks,
+  onDelete,
+  onUpdateStatus,
+  filter,
+  onFilterChange,
+  updatingTaskId,
+}: TasksViewProps) {
+  const statusCounts = useMemo(
+    () =>
+      tasks.reduce(
+        (accumulator, task) => {
+          accumulator[task.status] = (accumulator[task.status] ?? 0) + 1;
+          return accumulator;
+        },
+        { OPEN: 0, IN_PROGRESS: 0, COMPLETED: 0 } as Record<
+          CRMTask["status"],
+          number
+        >
+      ),
+    [tasks]
+  );
+
+  const filteredTasks = useMemo(
+    () =>
+      filter === "ALL"
+        ? tasks
+        : tasks.filter((task) => task.status === filter),
+    [filter, tasks]
+  );
+
+  const filterOptions: Array<{
+    id: TaskFilter;
+    label: string;
+    count: number;
+  }> = [
+    { id: "OPEN", label: "Pendientes", count: statusCounts.OPEN },
+    { id: "IN_PROGRESS", label: "En proceso", count: statusCounts.IN_PROGRESS },
+    { id: "COMPLETED", label: "Completadas", count: statusCounts.COMPLETED },
+    { id: "ALL", label: "Todas", count: tasks.length },
+  ];
+
   return (
-    <div className="space-y-3">
-      {tasks.length === 0 ? (
+    <div className="space-y-4">
+      <nav className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-white p-1 text-xs font-medium text-gray-500">
+        {filterOptions.map((option) => {
+          const isActive = filter === option.id;
+          return (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => onFilterChange(option.id)}
+              className={`flex items-center gap-2 rounded-md px-3 py-1.5 transition ${
+                isActive
+                  ? "bg-gray-900 text-white shadow"
+                  : "hover:bg-gray-100"
+              }`}
+            >
+              <span>{option.label}</span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] ${
+                  isActive ? "bg-white/20" : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                {option.count}
+              </span>
+            </button>
+          );
+        })}
+      </nav>
+
+      {filteredTasks.length === 0 ? (
         <div className="rounded-xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500">
-          Sin tareas pendientes. ¡Buen trabajo!
+          {filter === "ALL"
+            ? "Sin tareas registradas. ¡Buen trabajo!"
+            : "No hay tareas con el estado seleccionado."}
         </div>
       ) : (
-        tasks.map((task) => (
-          <article key={task.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-            <header className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-sm font-semibold text-gray-900">{task.title}</h3>
-                {task.description ? (
-                  <p className="mt-1 text-xs text-gray-500">{task.description}</p>
+        filteredTasks.map((task) => {
+          const isUpdating = updatingTaskId === task.id;
+
+          const handleStatusSelectChange = (
+            event: ChangeEvent<HTMLSelectElement>
+          ) => {
+            const nextStatus = event.target.value as CRMTask["status"];
+            if (nextStatus !== task.status) {
+              onUpdateStatus(task.id, nextStatus);
+            }
+          };
+
+          const toggleStatus = () => {
+            const nextStatus =
+              task.status === "COMPLETED" ? "OPEN" : "COMPLETED";
+            onUpdateStatus(task.id, nextStatus);
+          };
+
+          return (
+            <article
+              key={task.id}
+              className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+            >
+              <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900">{task.title}</h3>
+                  {task.description ? (
+                    <p className="mt-1 text-xs text-gray-500">{task.description}</p>
+                  ) : null}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    value={task.status}
+                    onChange={handleStatusSelectChange}
+                    disabled={isUpdating}
+                    className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs font-medium text-gray-700 shadow-sm focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/40"
+                  >
+                    {TASK_STATUS_OPTIONS.map((status) => (
+                      <option key={status} value={status}>
+                        {translateLabel(status)}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={toggleStatus}
+                    type="button"
+                    disabled={isUpdating}
+                    className="rounded-lg border border-gray-200 px-3 py-1 text-xs font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {task.status === "COMPLETED"
+                      ? "Reabrir"
+                      : "Marcar completada"}
+                  </button>
+                  <button
+                    onClick={() => onDelete(`/api/crm/tasks/${task.id}`)}
+                    className="text-xs font-medium text-red-500 hover:text-red-600"
+                    type="button"
+                    disabled={isUpdating}
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              </header>
+              <dl className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-gray-600">
+                <div>
+                  <dt className="font-medium text-gray-500">Estado</dt>
+                  <dd>{translateLabel(task.status)}</dd>
+                </div>
+                <div>
+                  <dt className="font-medium text-gray-500">Prioridad</dt>
+                  <dd>{translateLabel(task.priority)}</dd>
+                </div>
+                {task.dueDate ? (
+                  <div>
+                    <dt className="font-medium text-gray-500">Vencimiento</dt>
+                    <dd>{new Date(task.dueDate).toLocaleDateString("es-AR")}</dd>
+                  </div>
                 ) : null}
-              </div>
-              <button
-                onClick={() => onDelete(`/api/crm/tasks/${task.id}`)}
-                className="text-xs font-medium text-red-500 hover:text-red-600"
-                type="button"
-              >
-                Completar
-              </button>
-            </header>
-            <dl className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-gray-600">
-              <div>
-                <dt className="font-medium text-gray-500">Estado</dt>
-                <dd>{translateLabel(task.status)}</dd>
-              </div>
-              <div>
-                <dt className="font-medium text-gray-500">Prioridad</dt>
-                <dd>{translateLabel(task.priority)}</dd>
-              </div>
-              {task.dueDate ? (
-                <div>
-                  <dt className="font-medium text-gray-500">Vencimiento</dt>
-                  <dd>{new Date(task.dueDate).toLocaleDateString("es-AR")}</dd>
-                </div>
-              ) : null}
-              {task.contact ? (
-                <div>
-                  <dt className="font-medium text-gray-500">Contacto</dt>
-                  <dd>
-                    {task.contact.firstName} {task.contact.lastName}
-                  </dd>
-                </div>
-              ) : null}
-              {task.deal ? (
-                <div>
-                  <dt className="font-medium text-gray-500">Oportunidad</dt>
-                  <dd>{task.deal.title}</dd>
-                </div>
-              ) : null}
-            </dl>
-          </article>
-        ))
+                {task.contact ? (
+                  <div>
+                    <dt className="font-medium text-gray-500">Contacto</dt>
+                    <dd>
+                      {task.contact.firstName} {task.contact.lastName}
+                    </dd>
+                  </div>
+                ) : null}
+                {task.deal ? (
+                  <div>
+                    <dt className="font-medium text-gray-500">Oportunidad</dt>
+                    <dd>{task.deal.title}</dd>
+                  </div>
+                ) : null}
+              </dl>
+            </article>
+          );
+        })
       )}
     </div>
   );
