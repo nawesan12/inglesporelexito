@@ -19,6 +19,7 @@ import {
   X,
   XCircle,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -40,26 +41,24 @@ const scaleIn = {
 };
 
 export default function Page() {
+  const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [email, setEmail] = useState("");
-  const [isEmailSubmitted, setIsEmailSubmitted] = useState(false);
-  const whatsappGroupUrl = "https://chat.whatsapp.com/ingles-por-el-exito";
 
   const handleOpenModal = () => {
     setIsModalOpen(true);
     setEmail("");
-    setIsEmailSubmitted(false);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEmail("");
-    setIsEmailSubmitted(false);
   };
 
   const handleSubmitEmail = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setIsEmailSubmitted(true);
+    setIsModalOpen(false);
+    router.push("/thank-you");
   };
 
   return (
@@ -743,48 +742,29 @@ export default function Page() {
               Ingresá tu email para recibir el enlace directo al grupo de
               WhatsApp.
             </p>
-            {!isEmailSubmitted ? (
-              <form onSubmit={handleSubmitEmail} className="mt-6 space-y-4">
-                <div>
-                  <label htmlFor="modal-email" className="sr-only">
-                    Tu email
-                  </label>
-                  <input
-                    id="modal-email"
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    placeholder="tu@email.com"
-                    autoFocus
-                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base outline-none focus:ring-2 focus:ring-accent/60 focus:border-accent"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="w-full rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-gray-900 shadow-sm hover:bg-accent-hover transition"
-                >
-                  Enviarme el enlace
-                </button>
-              </form>
-            ) : (
-              <div className="mt-6 space-y-4">
-                <div className="rounded-xl bg-gray-50 p-4 text-left text-sm text-gray-700">
-                  <p>
-                    ¡Gracias! Revisá tu correo y unite al grupo para enterarte
-                    primero cuando abramos nuevos cupos.
-                  </p>
-                </div>
-                <a
-                  href={whatsappGroupUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-green-500 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-green-600 transition"
-                >
-                  <MessageCircle className="h-4 w-4" /> Ir al grupo de WhatsApp
-                </a>
+            <form onSubmit={handleSubmitEmail} className="mt-6 space-y-4">
+              <div>
+                <label htmlFor="modal-email" className="sr-only">
+                  Tu email
+                </label>
+                <input
+                  id="modal-email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="tu@email.com"
+                  autoFocus
+                  className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base outline-none focus:ring-2 focus:ring-accent/60 focus:border-accent"
+                />
               </div>
-            )}
+              <button
+                type="submit"
+                className="w-full rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-gray-900 shadow-sm hover:bg-accent-hover transition"
+              >
+                Enviarme el enlace
+              </button>
+            </form>
           </motion.div>
         </div>
       )}
