@@ -106,3 +106,95 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export async function PATCH(request: Request) {
+  try {
+    const payload = await request.json();
+    const contactId = sanitizeString(payload.id ?? payload.contactId);
+
+    if (!contactId) {
+      return NextResponse.json(
+        { error: "No se pudo identificar el contacto" },
+        { status: 400 }
+      );
+    }
+
+    const updateData: Record<string, unknown> = {};
+
+    const firstName = sanitizeString(payload.firstName);
+    const lastName = sanitizeString(payload.lastName);
+    const email = sanitizeString(payload.email);
+    const phone = sanitizeString(payload.phone);
+    const position = sanitizeString(payload.position);
+    const source = sanitizeString(payload.source);
+    const notes = sanitizeString(payload.notes);
+
+    if (firstName !== undefined) updateData.firstName = firstName;
+    if (lastName !== undefined) updateData.lastName = lastName;
+    if (email !== undefined) updateData.email = email;
+    if (phone !== undefined) updateData.phone = phone;
+    if (position !== undefined) updateData.position = position;
+    if (source !== undefined) updateData.source = source;
+    if (notes !== undefined) updateData.notes = notes;
+
+    if (
+      typeof payload.status === "string" &&
+      STATUS_VALUES.has(payload.status as ContactStatus)
+    ) {
+      updateData.status = payload.status;
+    }
+
+    if (payload.companyId === null) {
+      updateData.companyId = null;
+    } else if (typeof payload.companyId === "string") {
+      updateData.companyId = payload.companyId;
+    }
+
+    const contact = await prisma.contact.update({
+      where: { id: contactId },
+      data: updateData,
+      include: {
+        company: true,
+        deals: true,
+        tasks: true,
+        interactions: true,
+      },
+    });
+
+    return NextResponse.json({ contact });
+  } catch (error) {
+    console.error("Failed to update contact", error);
+    return NextResponse.json(
+      { error: "No se pudo actualizar el contacto" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const payload = await request.json().catch(() => null);
+    const contactId =
+      payload && typeof payload.id === "string"
+        ? sanitizeString(payload.id)
+        : payload && typeof payload.contactId === "string"
+          ? sanitizeString(payload.contactId)
+          : undefined;
+
+    if (!contactId) {
+      return NextResponse.json(
+        { error: "No se pudo identificar el contacto" },
+        { status: 400 }
+      );
+    }
+
+    await prisma.contact.delete({ where: { id: contactId } });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Failed to delete contact", error);
+    return NextResponse.json(
+      { error: "No se pudo eliminar el contacto" },
+      { status: 500 }
+    );
+  }
+}
