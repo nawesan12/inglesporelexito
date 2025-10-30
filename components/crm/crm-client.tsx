@@ -1,17 +1,27 @@
 "use client";
 
-import { useCallback, useMemo, useState, FormEvent } from "react";
 import {
+  useCallback,
+  useMemo,
+  useState,
+  type FormEvent,
+  type InputHTMLAttributes,
+  type ReactNode,
+  type TextareaHTMLAttributes,
+} from "react";
+import type {
   CRMContact,
   CRMDeal,
   CRMInteraction,
   CRMOverview,
   CRMTask,
+} from "@/lib/crm-service";
+import {
   CONTACT_STATUS_OPTIONS,
   DEAL_STAGE_OPTIONS,
   TASK_PRIORITY_OPTIONS,
   TASK_STATUS_OPTIONS,
-} from "@/lib/crm-service";
+} from "@/lib/crm-options";
 
 interface CRMClientProps {
   initialData: CRMOverview;
@@ -389,7 +399,7 @@ function MetricCard({ label, value, highlight = false }: MetricCardProps) {
 interface ActionCardProps {
   title: string;
   description: string;
-  children: React.ReactNode;
+  children: ReactNode;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   isSubmitting: boolean;
 }
@@ -413,7 +423,7 @@ function ActionCard({ title, description, children, onSubmit, isSubmitting }: Ac
   );
 }
 
-interface TextFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface TextFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
   name: string;
 }
@@ -431,7 +441,7 @@ function TextField({ label, name, ...props }: TextFieldProps) {
   );
 }
 
-interface TextAreaFieldProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+interface TextAreaFieldProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label: string;
   name: string;
 }
