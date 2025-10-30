@@ -29,6 +29,13 @@ interface CRMClientProps {
 
 type ViewMode = "pipeline" | "contacts" | "tasks" | "interactions";
 
+type ResourceType = "contacts" | "deals" | "tasks" | "interactions";
+
+type DeleteHandler = (
+  resource: ResourceType,
+  id: string
+) => Promise<void> | void;
+
 const PIPELINE_STAGES: Array<CRMDeal["stage"]> = [
   "QUALIFICATION",
   "NEEDS_ANALYSIS",
@@ -166,35 +173,37 @@ export function CRMClient({ initialData }: CRMClientProps) {
     }
   }, []);
 
-  const handleDelete = useCallback(async (endpoint: string) => {
+  const handleDelete = useCallback(async (resource: ResourceType, id: string) => {
     setFeedback(null);
     try {
-      const response = await fetch(endpoint, { method: "DELETE" });
+      const response = await fetch(`/api/crm/${resource}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id }),
+      });
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error ?? "No se pudo eliminar el registro");
       }
 
-      if (endpoint.includes("/contacts/")) {
-        const id = endpoint.split("/contacts/")[1];
+      if (resource === "contacts") {
         setContacts((prev) => prev.filter((contact) => contact.id !== id));
         setDeals((prev) => prev.filter((deal) => deal.contactId !== id));
         setTasks((prev) => prev.filter((task) => task.contactId !== id));
       }
 
-      if (endpoint.includes("/deals/")) {
-        const id = endpoint.split("/deals/")[1];
+      if (resource === "deals") {
         setDeals((prev) => prev.filter((deal) => deal.id !== id));
         setTasks((prev) => prev.filter((task) => task.dealId !== id));
       }
 
-      if (endpoint.includes("/tasks/")) {
-        const id = endpoint.split("/tasks/")[1];
+      if (resource === "tasks") {
         setTasks((prev) => prev.filter((task) => task.id !== id));
       }
 
-      if (endpoint.includes("/interactions/")) {
-        const id = endpoint.split("/interactions/")[1];
+      if (resource === "interactions") {
         setInteractions((prev) =>
           prev.filter((interaction) => interaction.id !== id)
         );
@@ -501,7 +510,7 @@ function SelectField({ label, name, options, required = false }: SelectFieldProp
 
 interface PipelineViewProps {
   deals: CRMDeal[];
-  onDelete: (endpoint: string) => Promise<void> | void;
+  onDelete: DeleteHandler;
 }
 
 function PipelineView({ deals, onDelete }: PipelineViewProps) {
@@ -536,7 +545,7 @@ function PipelineView({ deals, onDelete }: PipelineViewProps) {
                       </p>
                     </div>
                     <button
-                      onClick={() => onDelete(`/api/crm/deals/${deal.id}`)}
+                      onClick={() => onDelete("deals", deal.id)}
                       className="text-xs font-medium text-red-500 hover:text-red-600"
                       type="button"
                     >
@@ -576,7 +585,7 @@ function PipelineView({ deals, onDelete }: PipelineViewProps) {
 
 interface ContactsViewProps {
   contacts: CRMContact[];
-  onDelete: (endpoint: string) => Promise<void> | void;
+  onDelete: DeleteHandler;
 }
 
 function ContactsView({ contacts, onDelete }: ContactsViewProps) {
@@ -619,7 +628,7 @@ function ContactsView({ contacts, onDelete }: ContactsViewProps) {
                 <td className="px-4 py-3 text-sm text-gray-600">{contact.email}</td>
                 <td className="px-4 py-3 text-right">
                   <button
-                    onClick={() => onDelete(`/api/crm/contacts/${contact.id}`)}
+                    onClick={() => onDelete("contacts", contact.id)}
                     className="text-xs font-medium text-red-500 hover:text-red-600"
                     type="button"
                   >
@@ -637,7 +646,7 @@ function ContactsView({ contacts, onDelete }: ContactsViewProps) {
 
 interface TasksViewProps {
   tasks: CRMTask[];
-  onDelete: (endpoint: string) => Promise<void> | void;
+  onDelete: DeleteHandler;
 }
 
 function TasksView({ tasks, onDelete }: TasksViewProps) {
@@ -658,7 +667,7 @@ function TasksView({ tasks, onDelete }: TasksViewProps) {
                 ) : null}
               </div>
               <button
-                onClick={() => onDelete(`/api/crm/tasks/${task.id}`)}
+                onClick={() => onDelete("tasks", task.id)}
                 className="text-xs font-medium text-red-500 hover:text-red-600"
                 type="button"
               >
@@ -704,7 +713,7 @@ function TasksView({ tasks, onDelete }: TasksViewProps) {
 
 interface InteractionsViewProps {
   interactions: CRMInteraction[];
-  onDelete: (endpoint: string) => Promise<void> | void;
+  onDelete: DeleteHandler;
 }
 
 function InteractionsView({ interactions, onDelete }: InteractionsViewProps) {
@@ -737,9 +746,7 @@ function InteractionsView({ interactions, onDelete }: InteractionsViewProps) {
                   </p>
                 </div>
                 <button
-                  onClick={() =>
-                    onDelete(`/api/crm/interactions/${interaction.id}`)
-                  }
+                  onClick={() => onDelete("interactions", interaction.id)}
                   className="text-xs font-medium text-red-500 hover:text-red-600"
                   type="button"
                 >
