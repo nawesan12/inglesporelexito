@@ -58,19 +58,36 @@ export async function POST(request: Request) {
     if (payload.companyId) {
       companyId = payload.companyId;
     } else if (companyName) {
-      const company = await prisma.company.upsert({
+      const existingCompany = await prisma.company.findFirst({
         where: { name: companyName },
-        update: {
-          industry: companyIndustry,
-          website: companyWebsite,
-        },
-        create: {
-          name: companyName,
-          industry: companyIndustry,
-          website: companyWebsite,
-        },
       });
-      companyId = company.id;
+
+      if (existingCompany) {
+        companyId = existingCompany.id;
+
+        if (companyIndustry !== undefined || companyWebsite !== undefined) {
+          await prisma.company.update({
+            where: { id: existingCompany.id },
+            data: {
+              ...(companyIndustry !== undefined
+                ? { industry: companyIndustry }
+                : {}),
+              ...(companyWebsite !== undefined
+                ? { website: companyWebsite }
+                : {}),
+            },
+          });
+        }
+      } else {
+        const company = await prisma.company.create({
+          data: {
+            name: companyName,
+            industry: companyIndustry,
+            website: companyWebsite,
+          },
+        });
+        companyId = company.id;
+      }
     }
 
     const status =
