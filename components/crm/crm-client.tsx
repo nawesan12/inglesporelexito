@@ -110,7 +110,7 @@ export function CRMClient({ initialData }: CRMClientProps) {
     // Clean up empty strings so that the API can handle optional values gracefully
     Object.keys(payload).forEach((key) => {
       if (typeof payload[key] === "string" && payload[key] === "") {
-        payload[key] = undefined;
+        delete payload[key];
       }
     });
 
