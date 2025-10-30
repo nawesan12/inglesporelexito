@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { TaskPriority, TaskStatus } from "@prisma/client";
+import { TaskPriority, TaskStatus } from "@/generated/client";
 
 const STATUS_VALUES = new Set(Object.values(TaskStatus));
 const PRIORITY_VALUES = new Set(Object.values(TaskPriority));

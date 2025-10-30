@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ContactStatus } from "@prisma/client";
+import { ContactStatus } from "@/generated/client";
 
 function sanitizeString(value: unknown) {
   if (typeof value !== "string") return undefined;
