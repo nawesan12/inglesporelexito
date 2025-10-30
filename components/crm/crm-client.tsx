@@ -471,7 +471,7 @@ function TextAreaField({ label, name, ...props }: TextAreaFieldProps) {
 interface SelectFieldProps {
   label: string;
   name: string;
-  options: Array<string | { label: string; value: string }>;
+  options: ReadonlyArray<string | { label: string; value: string }>;
   required?: boolean;
 }
 
