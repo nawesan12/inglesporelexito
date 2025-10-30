@@ -9,8 +9,11 @@ async function CRMContent() {
 
 export default function CRMPage() {
   return (
-    <Suspense fallback={<div className="px-6 py-12 text-sm text-gray-600">Cargando CRM...</div>}>
-      {/* @ts-expect-error Async Server Component */}
+    <Suspense
+      fallback={
+        <div className="px-6 py-12 text-sm text-gray-600">Cargando CRM...</div>
+      }
+    >
       <CRMContent />
     </Suspense>
   );
