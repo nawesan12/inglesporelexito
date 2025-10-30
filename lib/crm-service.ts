@@ -1,10 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import {
-  ContactStatus,
-  DealStage,
-  TaskPriority,
-  TaskStatus,
-} from "@/generated/client";
+import { ContactStatus, DealStage, TaskStatus } from "@/generated/client";
 
 export async function getCRMOverview() {
   const [contacts, deals, tasks, interactions] = await Promise.all([
@@ -113,7 +108,9 @@ export type CRMDeal = CRMOverview["deals"][number];
 export type CRMTask = CRMOverview["tasks"][number];
 export type CRMSummary = CRMOverview["summary"];
 
-export const CONTACT_STATUS_OPTIONS = Object.values(ContactStatus);
-export const DEAL_STAGE_OPTIONS = Object.values(DealStage);
-export const TASK_STATUS_OPTIONS = Object.values(TaskStatus);
-export const TASK_PRIORITY_OPTIONS = Object.values(TaskPriority);
+export {
+  CONTACT_STATUS_OPTIONS,
+  DEAL_STAGE_OPTIONS,
+  TASK_PRIORITY_OPTIONS,
+  TASK_STATUS_OPTIONS,
+} from "@/lib/crm-options";
