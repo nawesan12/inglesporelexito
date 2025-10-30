@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ContactStatus } from "@prisma/client";
+import { ContactStatus } from "@/generated/client";
 
 const STATUS_VALUES = new Set(Object.values(ContactStatus));
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { DealStage } from "@prisma/client";
+import { DealStage } from "@/generated/client";
 
 const STAGE_VALUES = new Set(Object.values(DealStage));
 

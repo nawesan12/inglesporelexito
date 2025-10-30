@@ -4,7 +4,7 @@ import {
   DealStage,
   TaskPriority,
   TaskStatus,
-} from "@prisma/client";
+} from "@/generated/client";
 
 export async function getCRMOverview() {
   const [contacts, deals, tasks, interactions] = await Promise.all([
