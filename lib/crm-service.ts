@@ -111,6 +111,7 @@ export type CRMOverview = Awaited<ReturnType<typeof getCRMOverview>>;
 export type CRMContact = CRMOverview["contacts"][number];
 export type CRMDeal = CRMOverview["deals"][number];
 export type CRMTask = CRMOverview["tasks"][number];
+export type CRMInteraction = CRMOverview["interactions"][number];
 export type CRMSummary = CRMOverview["summary"];
 
 export const CONTACT_STATUS_OPTIONS = Object.values(ContactStatus);
