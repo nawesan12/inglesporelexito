@@ -22,6 +22,14 @@ import {
   TASK_PRIORITY_OPTIONS,
   TASK_STATUS_OPTIONS,
 } from "@/lib/crm-options";
+import {
+  MessageCircle,
+  Target,
+  Timer,
+  TrendingUp,
+  Users,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 interface CRMClientProps {
   initialData: CRMOverview;
@@ -221,27 +229,66 @@ export function CRMClient({ initialData }: CRMClientProps) {
   }, []);
 
   return (
-    <section className="mx-auto w-full max-w-7xl px-6 py-12">
-      <header className="mb-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Panel CRM</h1>
-          <p className="mt-2 max-w-2xl text-sm text-gray-600">
-            Centralizá tus contactos, oportunidades y tareas de seguimiento en un mismo
-            lugar. Todo lo que necesitás para acompañar a tus estudiantes potenciales.
-          </p>
-        </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          <MetricCard label="Valor del pipeline" value={`$${summary.totalPipelineValue.toLocaleString("es-AR")}`} />
-          <MetricCard label="Deals abiertos" value={summary.openDeals.toString()} />
-          <MetricCard label="Contactos activos" value={summary.activeContacts.toString()} />
-          <MetricCard label="Tareas vencidas" value={summary.overdueTasks.toString()} highlight={summary.overdueTasks > 0} />
-          <MetricCard label="Interacciones 14 días" value={summary.recentInteractions.toString()} />
+    <section className="relative mx-auto w-full max-w-7xl overflow-hidden px-6 py-12">
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute -left-32 top-12 h-72 w-72 rounded-full bg-amber-300/25 blur-3xl" />
+        <div className="absolute -right-32 top-1/3 h-80 w-80 rounded-full bg-orange-200/25 blur-3xl" />
+        <div className="absolute bottom-0 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-yellow-200/30 blur-3xl" />
+      </div>
+      <header className="relative mb-10 overflow-hidden rounded-3xl border border-amber-100 bg-white/80 p-8 shadow-xl backdrop-blur">
+        <div aria-hidden className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-amber-200/40 blur-3xl" />
+        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="max-w-2xl">
+            <span className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700">
+              Panel CRM oficial
+            </span>
+            <h1 className="mt-4 text-4xl font-black text-gray-900">
+              Conectá, nutrí y cerrá oportunidades con estilo
+            </h1>
+            <p className="mt-3 text-base text-gray-600">
+              Centralizá cada contacto, oportunidad y tarea con la energía de Inglés por el Éxito.
+              Visualizá el avance de tus leads en tiempo real y asegurá un seguimiento impecable.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+            <MetricCard
+              Icon={TrendingUp}
+              label="Valor del pipeline"
+              note="Proyección total"
+              value={`$${summary.totalPipelineValue.toLocaleString("es-AR")}`}
+            />
+            <MetricCard
+              Icon={Target}
+              label="Deals abiertos"
+              note="Seguimiento activo"
+              value={summary.openDeals.toString()}
+            />
+            <MetricCard
+              Icon={Users}
+              label="Contactos activos"
+              note="Relaciones en curso"
+              value={summary.activeContacts.toString()}
+            />
+            <MetricCard
+              Icon={Timer}
+              highlight={summary.overdueTasks > 0}
+              label="Tareas vencidas"
+              note={summary.overdueTasks > 0 ? "Prioridad inmediata" : "Todo al día"}
+              value={summary.overdueTasks.toString()}
+            />
+            <MetricCard
+              Icon={MessageCircle}
+              label="Interacciones 14 días"
+              note="Conversaciones recientes"
+              value={summary.recentInteractions.toString()}
+            />
+          </div>
         </div>
       </header>
 
       <div className="grid gap-10 lg:grid-cols-[2fr,1fr]">
         <div className="space-y-6">
-          <nav className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white p-1 text-sm font-medium text-gray-500">
+          <nav className="flex items-center gap-2 rounded-2xl border border-amber-100 bg-white/80 p-1 text-sm font-semibold text-amber-700 shadow-sm backdrop-blur">
             {[
               { id: "pipeline" as ViewMode, label: "Pipeline" },
               { id: "contacts" as ViewMode, label: "Contactos" },
@@ -251,10 +298,11 @@ export function CRMClient({ initialData }: CRMClientProps) {
               <button
                 key={item.id}
                 onClick={() => setView(item.id)}
-                className={`flex-1 rounded-md px-4 py-2 transition ${
+                aria-pressed={view === item.id}
+                className={`flex-1 rounded-xl px-4 py-2 transition ${
                   view === item.id
-                    ? "bg-gray-900 text-white shadow"
-                    : "hover:bg-gray-100"
+                    ? "bg-gradient-to-r from-amber-400 via-amber-300 to-orange-300 text-gray-900 shadow"
+                    : "text-amber-700 hover:bg-amber-50"
                 }`}
                 type="button"
               >
@@ -265,10 +313,10 @@ export function CRMClient({ initialData }: CRMClientProps) {
 
           {feedback ? (
             <div
-              className={`rounded-lg border px-4 py-3 text-sm ${
+              className={`rounded-xl border px-4 py-3 text-sm shadow-sm ${
                 feedback.type === "success"
-                  ? "border-green-200 bg-green-50 text-green-700"
-                  : "border-red-200 bg-red-50 text-red-700"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : "border-rose-200 bg-rose-50 text-rose-700"
               }`}
             >
               {feedback.message}
@@ -390,17 +438,39 @@ interface MetricCardProps {
   label: string;
   value: string;
   highlight?: boolean;
+  note?: string;
+  Icon: LucideIcon;
 }
 
-function MetricCard({ label, value, highlight = false }: MetricCardProps) {
+function MetricCard({ label, value, highlight = false, note, Icon }: MetricCardProps) {
+  const accentLine = highlight
+    ? "from-rose-400 via-rose-300 to-amber-300"
+    : "from-amber-400 via-amber-300 to-orange-300";
+  const iconStyles = highlight
+    ? "bg-rose-100 text-rose-500"
+    : "bg-amber-100 text-amber-600";
+
   return (
-    <div
-      className={`rounded-xl border p-4 text-center shadow-sm ${
-        highlight ? "border-red-200 bg-red-50 text-red-700" : "border-gray-200 bg-white"
-      }`}
-    >
-      <p className="text-xs uppercase tracking-wide text-gray-500">{label}</p>
-      <p className="mt-2 text-xl font-semibold text-gray-900">{value}</p>
+    <div className="relative overflow-hidden rounded-2xl border border-amber-100 bg-white/80 p-5 text-left shadow-sm transition hover:shadow-md">
+      <div className="flex items-start justify-between">
+        <div>
+          <p
+            className={`text-xs font-semibold uppercase tracking-wide ${
+              highlight ? "text-rose-600" : "text-amber-700/80"
+            }`}
+          >
+            {label}
+          </p>
+          <p className="mt-2 text-2xl font-semibold text-gray-900">{value}</p>
+        </div>
+        <span className={`flex h-10 w-10 items-center justify-center rounded-full ${iconStyles}`}>
+          <Icon className="h-5 w-5" />
+        </span>
+      </div>
+      {note ? (
+        <p className={`mt-3 text-xs ${highlight ? "text-rose-600" : "text-gray-600"}`}>{note}</p>
+      ) : null}
+      <div className={`absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r ${accentLine}`} aria-hidden />
     </div>
   );
 }
@@ -415,19 +485,22 @@ interface ActionCardProps {
 
 function ActionCard({ title, description, children, onSubmit, isSubmitting }: ActionCardProps) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-      <p className="mt-1 text-sm text-gray-500">{description}</p>
-      <form className="mt-4 space-y-3" onSubmit={onSubmit}>
-        {children}
-        <button
-          type="submit"
-          className="w-full rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-70"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? "Guardando..." : "Guardar"}
-        </button>
-      </form>
+    <div className="relative overflow-hidden rounded-2xl border border-amber-100 bg-white/80 p-6 shadow-md backdrop-blur">
+      <div className="absolute -right-12 -top-12 h-28 w-28 rounded-full bg-amber-200/40 blur-2xl" aria-hidden />
+      <div className="relative">
+        <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+        <p className="mt-1 text-sm text-gray-600">{description}</p>
+        <form className="mt-4 space-y-3" onSubmit={onSubmit}>
+          {children}
+          <button
+            type="submit"
+            className="w-full rounded-xl bg-gradient-to-r from-amber-400 via-amber-300 to-orange-300 px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm transition hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 disabled:cursor-not-allowed disabled:opacity-70"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Guardando..." : "Guardar"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
@@ -444,7 +517,7 @@ function TextField({ label, name, ...props }: TextFieldProps) {
       <input
         {...props}
         name={name}
-        className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/40"
+        className="mt-1 w-full rounded-xl border border-amber-100 bg-white/90 px-3 py-2 text-sm text-gray-900 shadow-sm transition focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-400/40"
       />
     </label>
   );
@@ -462,7 +535,7 @@ function TextAreaField({ label, name, ...props }: TextAreaFieldProps) {
       <textarea
         {...props}
         name={name}
-        className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/40"
+        className="mt-1 w-full rounded-xl border border-amber-100 bg-white/90 px-3 py-2 text-sm text-gray-900 shadow-sm transition focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-400/40"
       />
     </label>
   );
@@ -482,7 +555,7 @@ function SelectField({ label, name, options, required = false }: SelectFieldProp
       <select
         name={name}
         required={required}
-        className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/40"
+        className="mt-1 w-full rounded-xl border border-amber-100 bg-white/90 px-3 py-2 text-sm text-gray-900 shadow-sm transition focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-400/40"
         defaultValue=""
       >
         <option value="" disabled>
@@ -524,19 +597,27 @@ function PipelineView({ deals, onDelete }: PipelineViewProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       {groupedDeals.map(({ stage, deals: dealsInStage }) => (
-        <div key={stage} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div
+          key={stage}
+          className="rounded-2xl border border-amber-100 bg-white/80 p-5 shadow-sm backdrop-blur transition hover:shadow-md"
+        >
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-700">{translateLabel(stage)}</h2>
-            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+            <h2 className="text-sm font-semibold text-gray-900">{translateLabel(stage)}</h2>
+            <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">
               {dealsInStage.length}
             </span>
           </div>
           <div className="mt-4 space-y-3">
             {dealsInStage.length === 0 ? (
-              <p className="text-xs text-gray-400">Todavía no hay oportunidades en esta etapa.</p>
+              <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50/50 px-4 py-5 text-center text-xs text-amber-700">
+                Todavía no hay oportunidades en esta etapa. ¡Momento ideal para prospectar!
+              </div>
             ) : (
               dealsInStage.map((deal) => (
-                <article key={deal.id} className="rounded-lg border border-gray-100 p-3 text-sm shadow-sm">
+                <article
+                  key={deal.id}
+                  className="rounded-xl border border-amber-50/70 bg-gradient-to-br from-white via-amber-50/50 to-white p-4 text-sm shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
+                >
                   <header className="flex items-start justify-between gap-2">
                     <div>
                       <p className="font-semibold text-gray-900">{deal.title}</p>
@@ -552,11 +633,13 @@ function PipelineView({ deals, onDelete }: PipelineViewProps) {
                       Eliminar
                     </button>
                   </header>
-                  <dl className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-600">
-                    <div>
-                      <dt className="font-medium text-gray-500">Valor</dt>
-                      <dd>${deal.value.toLocaleString("es-AR")}</dd>
-                    </div>
+                  <dl className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-600">
+                    {typeof deal.value === "number" ? (
+                      <div>
+                        <dt className="font-medium text-gray-500">Valor</dt>
+                        <dd>${deal.value.toLocaleString("es-AR")}</dd>
+                      </div>
+                    ) : null}
                     {deal.probability ? (
                       <div>
                         <dt className="font-medium text-gray-500">Prob.</dt>
@@ -571,8 +654,9 @@ function PipelineView({ deals, onDelete }: PipelineViewProps) {
                     ) : null}
                   </dl>
                   {deal.notes ? (
-                    <p className="mt-2 text-xs text-gray-500">{deal.notes}</p>
+                    <p className="mt-2 text-xs text-gray-600">{deal.notes}</p>
                   ) : null}
+                  <DealProgress stage={deal.stage} />
                 </article>
               ))
             )}
@@ -590,9 +674,9 @@ interface ContactsViewProps {
 
 function ContactsView({ contacts, onDelete }: ContactsViewProps) {
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-      <table className="min-w-full divide-y divide-gray-200 text-left text-sm text-gray-700">
-        <thead className="bg-gray-50">
+    <div className="overflow-hidden rounded-2xl border border-amber-100 bg-white/80 shadow-sm backdrop-blur">
+      <table className="min-w-full divide-y divide-amber-100 text-left text-sm text-gray-700">
+        <thead className="bg-amber-50/80 text-xs font-semibold uppercase tracking-wide text-amber-800">
           <tr>
             <th className="px-4 py-3 font-medium">Contacto</th>
             <th className="px-4 py-3 font-medium">Empresa</th>
@@ -601,16 +685,16 @@ function ContactsView({ contacts, onDelete }: ContactsViewProps) {
             <th className="px-4 py-3" />
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100">
+        <tbody className="divide-y divide-amber-50/80">
           {contacts.length === 0 ? (
             <tr>
-              <td colSpan={5} className="px-4 py-6 text-center text-sm text-gray-500">
+              <td colSpan={5} className="px-4 py-6 text-center text-sm text-gray-600">
                 Aún no cargaste contactos.
               </td>
             </tr>
           ) : (
             contacts.map((contact) => (
-              <tr key={contact.id} className="hover:bg-gray-50">
+              <tr key={contact.id} className="hover:bg-amber-50/70">
                 <td className="px-4 py-3">
                   <div className="font-semibold text-gray-900">
                     {contact.firstName} {contact.lastName}
@@ -621,7 +705,11 @@ function ContactsView({ contacts, onDelete }: ContactsViewProps) {
                   {contact.company?.name ?? "Independiente"}
                 </td>
                 <td className="px-4 py-3">
-                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">
+                  <span
+                    className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${getContactStatusBadgeClasses(
+                      contact.status
+                    )}`}
+                  >
                     {translateLabel(contact.status)}
                   </span>
                 </td>
@@ -629,7 +717,7 @@ function ContactsView({ contacts, onDelete }: ContactsViewProps) {
                 <td className="px-4 py-3 text-right">
                   <button
                     onClick={() => onDelete("contacts", contact.id)}
-                    className="text-xs font-medium text-red-500 hover:text-red-600"
+                    className="text-xs font-semibold text-red-500 hover:text-red-600"
                     type="button"
                   >
                     Eliminar
@@ -653,36 +741,46 @@ function TasksView({ tasks, onDelete }: TasksViewProps) {
   return (
     <div className="space-y-3">
       {tasks.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500">
-          Sin tareas pendientes. ¡Buen trabajo!
-        </div>
+        <EmptyState
+          description="Sin tareas pendientes. ¡Buen trabajo!"
+          icon={Timer}
+          title="Todo en orden"
+        />
       ) : (
         tasks.map((task) => (
-          <article key={task.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+          <article
+            key={task.id}
+            className="rounded-2xl border border-amber-100 bg-white/80 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
+          >
             <header className="flex items-start justify-between gap-4">
               <div>
                 <h3 className="text-sm font-semibold text-gray-900">{task.title}</h3>
                 {task.description ? (
-                  <p className="mt-1 text-xs text-gray-500">{task.description}</p>
+                  <p className="mt-1 text-xs text-gray-600">{task.description}</p>
                 ) : null}
               </div>
               <button
                 onClick={() => onDelete("tasks", task.id)}
-                className="text-xs font-medium text-red-500 hover:text-red-600"
+                className="text-xs font-semibold text-amber-700 hover:text-amber-900"
                 type="button"
               >
                 Completar
               </button>
             </header>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${getTaskStatusBadgeClasses(task.status)}`}>
+                {translateLabel(task.status)}
+              </span>
+              <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${getPriorityBadgeClasses(task.priority)}`}>
+                {translateLabel(task.priority)}
+              </span>
+              {isTaskOverdue(task) ? (
+                <span className="inline-flex items-center rounded-full bg-rose-100 px-2.5 py-1 text-[11px] font-semibold text-rose-600">
+                  Vencida
+                </span>
+              ) : null}
+            </div>
             <dl className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-gray-600">
-              <div>
-                <dt className="font-medium text-gray-500">Estado</dt>
-                <dd>{translateLabel(task.status)}</dd>
-              </div>
-              <div>
-                <dt className="font-medium text-gray-500">Prioridad</dt>
-                <dd>{translateLabel(task.priority)}</dd>
-              </div>
               {task.dueDate ? (
                 <div>
                   <dt className="font-medium text-gray-500">Vencimiento</dt>
@@ -720,23 +818,25 @@ function InteractionsView({ interactions, onDelete }: InteractionsViewProps) {
   return (
     <div className="space-y-3">
       {interactions.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500">
-          Todavía no registraste interacciones. Sumá la primera para hacer seguimiento.
-        </div>
+        <EmptyState
+          description="Todavía no registraste interacciones. Sumá la primera para hacer seguimiento."
+          icon={MessageCircle}
+          title="Comenzá la conversación"
+        />
       ) : (
         interactions.map((interaction) => {
           const occurredAt = new Date(interaction.occurredAt);
           return (
             <article
               key={interaction.id}
-              className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+              className="rounded-2xl border border-amber-100 bg-white/80 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
             >
               <header className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">
+                  <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber-700">
                     {interaction.channel}
-                  </p>
-                  <p className="mt-1 text-xs text-gray-500">
+                  </span>
+                  <p className="mt-2 text-xs text-gray-500">
                     {Number.isNaN(occurredAt.getTime())
                       ? "Fecha no disponible"
                       : occurredAt.toLocaleString("es-AR", {
@@ -747,7 +847,7 @@ function InteractionsView({ interactions, onDelete }: InteractionsViewProps) {
                 </div>
                 <button
                   onClick={() => onDelete("interactions", interaction.id)}
-                  className="text-xs font-medium text-red-500 hover:text-red-600"
+                  className="text-xs font-semibold text-red-500 hover:text-red-600"
                   type="button"
                 >
                   Eliminar
@@ -798,4 +898,86 @@ function translateLabel(value: string) {
   };
 
   return dictionary[value] ?? value;
+}
+
+interface DealProgressProps {
+  stage: CRMDeal["stage"];
+}
+
+function DealProgress({ stage }: DealProgressProps) {
+  const currentIndex = PIPELINE_STAGES.indexOf(stage);
+  const totalStages = PIPELINE_STAGES.length - 1;
+  const progress = totalStages <= 0 || currentIndex < 0 ? 0 : Math.round((currentIndex / totalStages) * 100);
+
+  return (
+    <div className="mt-4">
+      <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide text-amber-700/80">
+        <span>Progreso</span>
+        <span>{progress}%</span>
+      </div>
+      <div className="mt-2 h-1.5 w-full rounded-full bg-amber-100">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-amber-400 via-amber-300 to-orange-300"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+      <p className="mt-2 text-[11px] text-gray-500">
+        En etapa <span className="font-semibold text-gray-700">{translateLabel(stage)}</span>
+      </p>
+    </div>
+  );
+}
+
+interface EmptyStateProps {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+}
+
+function EmptyState({ icon: Icon, title, description }: EmptyStateProps) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-amber-200 bg-white/70 px-6 py-8 text-center shadow-sm">
+      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+        <Icon className="h-6 w-6" />
+      </span>
+      <h3 className="mt-4 text-sm font-semibold text-gray-900">{title}</h3>
+      <p className="mt-2 text-sm text-gray-600">{description}</p>
+    </div>
+  );
+}
+
+function getContactStatusBadgeClasses(status: CRMContact["status"]) {
+  const dictionary: Partial<Record<CRMContact["status"], string>> = {
+    LEAD: "bg-amber-100 text-amber-700",
+    ACTIVE: "bg-emerald-100 text-emerald-700",
+    CHURNED: "bg-rose-100 text-rose-600",
+  };
+
+  return dictionary[status] ?? "bg-amber-100 text-amber-700";
+}
+
+function getTaskStatusBadgeClasses(status: CRMTask["status"]) {
+  const dictionary: Partial<Record<CRMTask["status"], string>> = {
+    OPEN: "bg-amber-100 text-amber-700",
+    IN_PROGRESS: "bg-blue-100 text-blue-600",
+    COMPLETED: "bg-emerald-100 text-emerald-700",
+  };
+
+  return dictionary[status] ?? "bg-amber-100 text-amber-700";
+}
+
+function getPriorityBadgeClasses(priority: CRMTask["priority"]) {
+  const dictionary: Partial<Record<CRMTask["priority"], string>> = {
+    LOW: "bg-emerald-100 text-emerald-700",
+    MEDIUM: "bg-amber-100 text-amber-700",
+    HIGH: "bg-rose-100 text-rose-600",
+  };
+
+  return dictionary[priority] ?? "bg-amber-100 text-amber-700";
+}
+
+function isTaskOverdue(task: CRMTask) {
+  if (!task.dueDate) return false;
+  if (task.status === "COMPLETED") return false;
+  return new Date(task.dueDate).getTime() < Date.now();
 }
