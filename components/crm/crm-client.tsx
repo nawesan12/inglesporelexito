@@ -2,6 +2,8 @@
 
 import {
   useCallback,
+  useEffect,
+  useId,
   useMemo,
   useState,
   type FormEvent,
@@ -9,6 +11,7 @@ import {
   type ReactNode,
   type TextareaHTMLAttributes,
 } from "react";
+import { createPortal } from "react-dom";
 import type {
   CRMContact,
   CRMDeal,
@@ -23,11 +26,16 @@ import {
   TASK_STATUS_OPTIONS,
 } from "@/lib/crm-options";
 import {
+  Briefcase,
+  ClipboardList,
   MessageCircle,
+  MessageSquare,
   Target,
   Timer,
   TrendingUp,
+  UserPlus,
   Users,
+  X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -58,6 +66,8 @@ type FeedbackState = {
   message: string;
 } | null;
 
+type ActionType = "contact" | "deal" | "task" | "interaction";
+
 export function CRMClient({ initialData }: CRMClientProps) {
   const [contacts, setContacts] = useState<CRMContact[]>(initialData.contacts);
   const [deals, setDeals] = useState<CRMDeal[]>(initialData.deals);
@@ -67,6 +77,7 @@ export function CRMClient({ initialData }: CRMClientProps) {
   );
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeAction, setActiveAction] = useState<ActionType | null>(null);
   const [view, setView] = useState<ViewMode>("pipeline");
 
   const summary = useMemo(() => {
@@ -96,90 +107,96 @@ export function CRMClient({ initialData }: CRMClientProps) {
     };
   }, [contacts, deals, tasks, interactions]);
 
-  const handleSubmit = useCallback(async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setFeedback(null);
-    setIsSubmitting(true);
+  const createSubmitHandler = useCallback(
+    (onSuccess?: () => void) =>
+      async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        setFeedback(null);
+        setIsSubmitting(true);
 
-    const form = new FormData(event.currentTarget);
-    const endpoint = form.get("endpoint");
-    const method = (form.get("method") as string | null) ?? "POST";
+        const formElement = event.currentTarget;
+        const form = new FormData(formElement);
+        const endpoint = form.get("endpoint");
+        const method = (form.get("method") as string | null) ?? "POST";
 
-    if (typeof endpoint !== "string") {
-      setFeedback({ type: "error", message: "No se pudo identificar la acción" });
-      setIsSubmitting(false);
-      return;
-    }
+        if (typeof endpoint !== "string") {
+          setFeedback({ type: "error", message: "No se pudo identificar la acción" });
+          setIsSubmitting(false);
+          return;
+        }
 
-    const payload = Object.fromEntries(
-      Array.from(form.entries()).filter(([key]) => !["endpoint", "method"].includes(key))
-    ) as Record<string, FormDataEntryValue | undefined>;
+        const payload = Object.fromEntries(
+          Array.from(form.entries()).filter(([key]) => !["endpoint", "method"].includes(key))
+        ) as Record<string, FormDataEntryValue | undefined>;
 
-    // Clean up empty strings so that the API can handle optional values gracefully
-    Object.keys(payload).forEach((key) => {
-      if (typeof payload[key] === "string" && payload[key] === "") {
-        delete payload[key];
-      }
-    });
-
-    try {
-      const response = await fetch(endpoint, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error ?? "No se pudo completar la acción");
-      }
-
-      if ("contact" in data) {
-        setContacts((prev) => {
-          const otherContacts = prev.filter((contact) => contact.id !== data.contact.id);
-          return [data.contact, ...otherContacts];
+        // Clean up empty strings so that the API can handle optional values gracefully
+        Object.keys(payload).forEach((key) => {
+          if (typeof payload[key] === "string" && payload[key] === "") {
+            delete payload[key];
+          }
         });
-      }
 
-      if ("deal" in data) {
-        setDeals((prev) => {
-          const otherDeals = prev.filter((deal) => deal.id !== data.deal.id);
-          return [data.deal, ...otherDeals];
-        });
-      }
+        try {
+          const response = await fetch(endpoint, {
+            method,
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
 
-      if ("task" in data) {
-        setTasks((prev) => {
-          const otherTasks = prev.filter((task) => task.id !== data.task.id);
-          return [data.task, ...otherTasks];
-        });
-      }
+          const data = await response.json();
 
-      if ("interaction" in data) {
-        setInteractions((prev) => {
-          const otherInteractions = prev.filter(
-            (interaction) => interaction.id !== data.interaction.id
-          );
-          return [data.interaction, ...otherInteractions];
-        });
-      }
+          if (!response.ok) {
+            throw new Error(data.error ?? "No se pudo completar la acción");
+          }
 
-      setFeedback({ type: "success", message: "Cambios guardados con éxito" });
-      event.currentTarget.reset();
-    } catch (error) {
-      console.error(error);
-      setFeedback({
-        type: "error",
-        message:
-          error instanceof Error ? error.message : "Ocurrió un problema inesperado",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, []);
+          if ("contact" in data) {
+            setContacts((prev) => {
+              const otherContacts = prev.filter((contact) => contact.id !== data.contact.id);
+              return [data.contact, ...otherContacts];
+            });
+          }
+
+          if ("deal" in data) {
+            setDeals((prev) => {
+              const otherDeals = prev.filter((deal) => deal.id !== data.deal.id);
+              return [data.deal, ...otherDeals];
+            });
+          }
+
+          if ("task" in data) {
+            setTasks((prev) => {
+              const otherTasks = prev.filter((task) => task.id !== data.task.id);
+              return [data.task, ...otherTasks];
+            });
+          }
+
+          if ("interaction" in data) {
+            setInteractions((prev) => {
+              const otherInteractions = prev.filter(
+                (interaction) => interaction.id !== data.interaction.id
+              );
+              return [data.interaction, ...otherInteractions];
+            });
+          }
+
+          setFeedback({ type: "success", message: "Cambios guardados con éxito" });
+          formElement.reset();
+          onSuccess?.();
+        } catch (error) {
+          console.error(error);
+          setFeedback({
+            type: "error",
+            message:
+              error instanceof Error ? error.message : "Ocurrió un problema inesperado",
+          });
+        } finally {
+          setIsSubmitting(false);
+        }
+      },
+    []
+  );
 
   const handleDelete = useCallback(async (resource: ResourceType, id: string) => {
     setFeedback(null);
@@ -231,26 +248,27 @@ export function CRMClient({ initialData }: CRMClientProps) {
   return (
     <section className="relative mx-auto w-full max-w-7xl overflow-hidden px-6 py-12">
       <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute -left-32 top-12 h-72 w-72 rounded-full bg-amber-300/25 blur-3xl" />
-        <div className="absolute -right-32 top-1/3 h-80 w-80 rounded-full bg-orange-200/25 blur-3xl" />
-        <div className="absolute bottom-0 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-yellow-200/30 blur-3xl" />
+        <div className="absolute -left-40 top-12 h-80 w-80 rounded-full bg-sky-300/20 blur-3xl" />
+        <div className="absolute -right-32 top-1/3 h-80 w-80 rounded-full bg-indigo-300/20 blur-3xl" />
+        <div className="absolute bottom-0 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-slate-200/40 blur-3xl" />
       </div>
-      <header className="relative mb-10 overflow-hidden rounded-3xl border border-amber-100 bg-white/80 p-8 shadow-xl backdrop-blur">
-        <div aria-hidden className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-amber-200/40 blur-3xl" />
-        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+      <header className="relative mb-12 overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-white/95 via-white/80 to-slate-50 p-10 shadow-2xl backdrop-blur">
+        <div aria-hidden className="absolute -right-28 -top-32 h-72 w-72 rounded-full bg-sky-200/40 blur-3xl" />
+        <div aria-hidden className="absolute -left-28 bottom-0 h-80 w-80 rounded-full bg-indigo-200/30 blur-3xl" />
+        <div className="relative flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
           <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700">
+            <span className="inline-flex items-center gap-2 rounded-full bg-indigo-100/80 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-indigo-700">
               Panel CRM oficial
             </span>
-            <h1 className="mt-4 text-4xl font-black text-gray-900">
-              Conectá, nutrí y cerrá oportunidades con estilo
+            <h1 className="mt-4 text-4xl font-black text-slate-900">
+              Gestión comercial elegante y enfocada en resultados
             </h1>
-            <p className="mt-3 text-base text-gray-600">
-              Centralizá cada contacto, oportunidad y tarea con la energía de Inglés por el Éxito.
-              Visualizá el avance de tus leads en tiempo real y asegurá un seguimiento impecable.
+            <p className="mt-3 text-base text-slate-600">
+              Centralizá contactos, oportunidades y tareas en un espacio diseñado para equipos modernos.
+              Visualizá el avance de cada relación en tiempo real y asegurá un seguimiento impecable.
             </p>
           </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
             <MetricCard
               Icon={TrendingUp}
               label="Valor del pipeline"
@@ -288,7 +306,7 @@ export function CRMClient({ initialData }: CRMClientProps) {
 
       <div className="grid gap-10 lg:grid-cols-[2fr,1fr]">
         <div className="space-y-6">
-          <nav className="flex items-center gap-2 rounded-2xl border border-amber-100 bg-white/80 p-1 text-sm font-semibold text-amber-700 shadow-sm backdrop-blur">
+          <nav className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white/80 p-1 text-sm font-semibold text-slate-600 shadow-sm backdrop-blur">
             {[
               { id: "pipeline" as ViewMode, label: "Pipeline" },
               { id: "contacts" as ViewMode, label: "Contactos" },
@@ -301,8 +319,8 @@ export function CRMClient({ initialData }: CRMClientProps) {
                 aria-pressed={view === item.id}
                 className={`flex-1 rounded-xl px-4 py-2 transition ${
                   view === item.id
-                    ? "bg-gradient-to-r from-amber-400 via-amber-300 to-orange-300 text-gray-900 shadow"
-                    : "text-amber-700 hover:bg-amber-50"
+                    ? "bg-slate-900 text-white shadow"
+                    : "hover:bg-slate-100"
                 }`}
                 type="button"
               >
@@ -331,105 +349,170 @@ export function CRMClient({ initialData }: CRMClientProps) {
           )}
         </div>
 
-        <aside className="space-y-6">
-          <ActionCard title="Nuevo contacto" description="Registra un nuevo lead o estudiante en tu base." onSubmit={handleSubmit} isSubmitting={isSubmitting}>
-            <input type="hidden" name="endpoint" value="/api/crm/contacts" />
-            <div className="grid gap-3 sm:grid-cols-2">
-              <TextField label="Nombre" name="firstName" required />
-              <TextField label="Apellido" name="lastName" required />
-            </div>
-            <TextField label="Email" name="email" type="email" required />
-            <TextField label="Teléfono" name="phone" />
-            <TextField label="Cargo / Rol" name="position" />
-            <TextField label="Empresa" name="companyName" placeholder="Nombre de la empresa" />
-            <TextField label="Industria" name="companyIndustry" />
-            <TextField label="Sitio web" name="companyWebsite" type="url" placeholder="https://" />
-            <div className="grid gap-3 sm:grid-cols-2">
-              <SelectField label="Estado" name="status" options={CONTACT_STATUS_OPTIONS} />
-              <TextField label="Fuente" name="source" placeholder="Instagram, Referido, etc." />
-            </div>
-            <TextAreaField label="Notas" name="notes" rows={3} />
-          </ActionCard>
-
-          <ActionCard title="Nueva oportunidad" description="Crea un seguimiento dentro del pipeline de ventas." onSubmit={handleSubmit} isSubmitting={isSubmitting}>
-            <input type="hidden" name="endpoint" value="/api/crm/deals" />
-            <div className="grid gap-3">
-              <TextField label="Título" name="title" required />
-              <SelectField
-                label="Contacto"
-                name="contactId"
-                required
-                options={contacts.map((contact) => ({
-                  label: `${contact.firstName} ${contact.lastName}`,
-                  value: contact.id,
-                }))}
-              />
-              <SelectField label="Etapa" name="stage" options={DEAL_STAGE_OPTIONS} />
-              <TextField label="Valor estimado" name="value" type="number" min="0" step="1000" />
-              <TextField label="Probabilidad (%)" name="probability" type="number" min="0" max="100" />
-              <TextField label="Cierre esperado" name="expectedClose" type="date" />
-              <TextAreaField label="Notas" name="notes" rows={3} />
-            </div>
-          </ActionCard>
-
-          <ActionCard title="Nueva tarea" description="Asigná recordatorios para que ningún seguimiento quede pendiente." onSubmit={handleSubmit} isSubmitting={isSubmitting}>
-            <input type="hidden" name="endpoint" value="/api/crm/tasks" />
-            <div className="grid gap-3">
-              <TextField label="Título" name="title" required />
-              <TextAreaField label="Descripción" name="description" rows={3} />
-              <TextField label="Vencimiento" name="dueDate" type="date" />
-              <SelectField label="Estado" name="status" options={TASK_STATUS_OPTIONS} />
-              <SelectField label="Prioridad" name="priority" options={TASK_PRIORITY_OPTIONS} />
-              <SelectField
-                label="Contacto"
-                name="contactId"
-                options={contacts.map((contact) => ({
-                  label: `${contact.firstName} ${contact.lastName}`,
-                  value: contact.id,
-                }))}
-              />
-              <SelectField
-                label="Oportunidad"
-                name="dealId"
-                options={deals.map((deal) => ({
-                  label: deal.title,
-                  value: deal.id,
-                }))}
-              />
-            </div>
-          </ActionCard>
-
-          <ActionCard
+        <aside className="space-y-5">
+          <ActionLauncher
+            Icon={UserPlus}
+            title="Nuevo contacto"
+            description="Registrá leads o estudiantes y mantené la base organizada."
+            onClick={() => setActiveAction("contact")}
+          />
+          <ActionLauncher
+            Icon={Briefcase}
+            title="Nueva oportunidad"
+            description="Crea seguimientos claros para impulsar el pipeline."
+            onClick={() => setActiveAction("deal")}
+          />
+          <ActionLauncher
+            Icon={ClipboardList}
+            title="Nueva tarea"
+            description="Asigná recordatorios claves y asegurá el seguimiento."
+            onClick={() => setActiveAction("task")}
+          />
+          <ActionLauncher
+            Icon={MessageSquare}
             title="Nueva interacción"
-            description="Registrá los últimos contactos con estudiantes o empresas."
-            onSubmit={handleSubmit}
-            isSubmitting={isSubmitting}
-          >
-            <input type="hidden" name="endpoint" value="/api/crm/interactions" />
-            <div className="grid gap-3">
-              <TextField label="Canal" name="channel" placeholder="Email, Llamada, WhatsApp..." required />
-              <TextAreaField label="Resumen" name="summary" rows={3} required />
-              <TextField label="Fecha y hora" name="occurredAt" type="datetime-local" />
-              <SelectField
-                label="Contacto"
-                name="contactId"
-                options={contacts.map((contact) => ({
-                  label: `${contact.firstName} ${contact.lastName}`,
-                  value: contact.id,
-                }))}
-              />
-              <SelectField
-                label="Oportunidad"
-                name="dealId"
-                options={deals.map((deal) => ({
-                  label: deal.title,
-                  value: deal.id,
-                }))}
-              />
-            </div>
-          </ActionCard>
+            description="Dejá registro de cada contacto y próxima acción."
+            onClick={() => setActiveAction("interaction")}
+          />
         </aside>
       </div>
+
+      <ActionModal
+        isOpen={activeAction === "contact"}
+        onClose={() => setActiveAction(null)}
+        title="Nuevo contacto"
+        description="Completá la información del lead para iniciar el relacionamiento."
+        onSubmit={createSubmitHandler(() => setActiveAction(null))}
+        isSubmitting={isSubmitting}
+      >
+        <input type="hidden" name="endpoint" value="/api/crm/contacts" />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <TextField label="Nombre" name="firstName" required />
+          <TextField label="Apellido" name="lastName" required />
+        </div>
+        <TextField label="Email" name="email" type="email" required />
+        <TextField label="Teléfono" name="phone" />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <TextField label="Cargo / Rol" name="position" />
+          <TextField label="Empresa" name="companyName" placeholder="Nombre de la empresa" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <TextField label="Industria" name="companyIndustry" />
+          <TextField label="Sitio web" name="companyWebsite" type="url" placeholder="https://" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <SelectField label="Estado" name="status" options={CONTACT_STATUS_OPTIONS} />
+          <TextField label="Fuente" name="source" placeholder="Instagram, Referido, etc." />
+        </div>
+        <TextAreaField label="Notas" name="notes" rows={3} />
+      </ActionModal>
+
+      <ActionModal
+        isOpen={activeAction === "deal"}
+        onClose={() => setActiveAction(null)}
+        title="Nueva oportunidad"
+        description="Definí los datos clave de la oportunidad y sumala al pipeline."
+        onSubmit={createSubmitHandler(() => setActiveAction(null))}
+        isSubmitting={isSubmitting}
+      >
+        <input type="hidden" name="endpoint" value="/api/crm/deals" />
+        <div className="grid gap-4">
+          <TextField label="Título" name="title" required />
+          <SelectField
+            label="Contacto"
+            name="contactId"
+            required
+            options={contacts.map((contact) => ({
+              label: `${contact.firstName} ${contact.lastName}`,
+              value: contact.id,
+            }))}
+          />
+          <SelectField label="Etapa" name="stage" options={DEAL_STAGE_OPTIONS} />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <TextField label="Valor estimado" name="value" type="number" min="0" step="1000" />
+            <TextField label="Probabilidad (%)" name="probability" type="number" min="0" max="100" />
+          </div>
+          <TextField label="Cierre esperado" name="expectedClose" type="date" />
+          <TextAreaField label="Notas" name="notes" rows={3} />
+        </div>
+      </ActionModal>
+
+      <ActionModal
+        isOpen={activeAction === "task"}
+        onClose={() => setActiveAction(null)}
+        title="Nueva tarea"
+        description="Asigná un recordatorio para que el seguimiento nunca se frene."
+        onSubmit={createSubmitHandler(() => setActiveAction(null))}
+        isSubmitting={isSubmitting}
+      >
+        <input type="hidden" name="endpoint" value="/api/crm/tasks" />
+        <div className="grid gap-4">
+          <TextField label="Título" name="title" required />
+          <TextAreaField label="Descripción" name="description" rows={3} />
+          <TextField label="Vencimiento" name="dueDate" type="date" />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <SelectField label="Estado" name="status" options={TASK_STATUS_OPTIONS} />
+            <SelectField label="Prioridad" name="priority" options={TASK_PRIORITY_OPTIONS} />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <SelectField
+              label="Contacto"
+              name="contactId"
+              options={contacts.map((contact) => ({
+                label: `${contact.firstName} ${contact.lastName}`,
+                value: contact.id,
+              }))}
+            />
+            <SelectField
+              label="Oportunidad"
+              name="dealId"
+              options={deals.map((deal) => ({
+                label: deal.title,
+                value: deal.id,
+              }))}
+            />
+          </div>
+        </div>
+      </ActionModal>
+
+      <ActionModal
+        isOpen={activeAction === "interaction"}
+        onClose={() => setActiveAction(null)}
+        title="Nueva interacción"
+        description="Dejá constancia de la conversación y planificá próximos pasos."
+        onSubmit={createSubmitHandler(() => setActiveAction(null))}
+        isSubmitting={isSubmitting}
+      >
+        <input type="hidden" name="endpoint" value="/api/crm/interactions" />
+        <div className="grid gap-4">
+          <TextField
+            label="Canal"
+            name="channel"
+            placeholder="Email, Llamada, WhatsApp..."
+            required
+          />
+          <TextAreaField label="Resumen" name="summary" rows={3} required />
+          <TextField label="Fecha y hora" name="occurredAt" type="datetime-local" />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <SelectField
+              label="Contacto"
+              name="contactId"
+              options={contacts.map((contact) => ({
+                label: `${contact.firstName} ${contact.lastName}`,
+                value: contact.id,
+              }))}
+            />
+            <SelectField
+              label="Oportunidad"
+              name="dealId"
+              options={deals.map((deal) => ({
+                label: deal.title,
+                value: deal.id,
+              }))}
+            />
+          </div>
+        </div>
+      </ActionModal>
     </section>
   );
 }
@@ -444,19 +527,19 @@ interface MetricCardProps {
 
 function MetricCard({ label, value, highlight = false, note, Icon }: MetricCardProps) {
   const accentLine = highlight
-    ? "from-rose-400 via-rose-300 to-amber-300"
-    : "from-amber-400 via-amber-300 to-orange-300";
+    ? "from-rose-500 via-rose-400 to-orange-300"
+    : "from-indigo-500 via-sky-500 to-emerald-400";
   const iconStyles = highlight
-    ? "bg-rose-100 text-rose-500"
-    : "bg-amber-100 text-amber-600";
+    ? "bg-rose-100 text-rose-600"
+    : "bg-slate-100 text-indigo-600";
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-amber-100 bg-white/80 p-5 text-left shadow-sm transition hover:shadow-md">
+    <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white/85 p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg">
       <div className="flex items-start justify-between">
         <div>
           <p
             className={`text-xs font-semibold uppercase tracking-wide ${
-              highlight ? "text-rose-600" : "text-amber-700/80"
+              highlight ? "text-rose-600" : "text-slate-600"
             }`}
           >
             {label}
@@ -468,40 +551,137 @@ function MetricCard({ label, value, highlight = false, note, Icon }: MetricCardP
         </span>
       </div>
       {note ? (
-        <p className={`mt-3 text-xs ${highlight ? "text-rose-600" : "text-gray-600"}`}>{note}</p>
+        <p className={`mt-3 text-xs ${highlight ? "text-rose-600" : "text-slate-500"}`}>{note}</p>
       ) : null}
       <div className={`absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r ${accentLine}`} aria-hidden />
     </div>
   );
 }
 
-interface ActionCardProps {
+interface ActionLauncherProps {
+  title: string;
+  description: string;
+  onClick: () => void;
+  Icon: LucideIcon;
+  ctaLabel?: string;
+}
+
+function ActionLauncher({ title, description, onClick, Icon, ctaLabel = "Crear registro" }: ActionLauncherProps) {
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg">
+      <div className="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-slate-200/40 blur-2xl" aria-hidden />
+      <div className="relative space-y-4">
+        <div className="flex items-start gap-4">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-900 text-white shadow-sm">
+            <Icon className="h-5 w-5" />
+          </span>
+          <div>
+            <h2 className="text-base font-semibold text-slate-900">{title}</h2>
+            <p className="mt-1 text-sm text-slate-600">{description}</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onClick}
+          className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+        >
+          {ctaLabel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+interface ActionModalProps {
   title: string;
   description: string;
   children: ReactNode;
+  isOpen: boolean;
+  onClose: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   isSubmitting: boolean;
 }
 
-function ActionCard({ title, description, children, onSubmit, isSubmitting }: ActionCardProps) {
-  return (
-    <div className="relative overflow-hidden rounded-2xl border border-amber-100 bg-white/80 p-6 shadow-md backdrop-blur">
-      <div className="absolute -right-12 -top-12 h-28 w-28 rounded-full bg-amber-200/40 blur-2xl" aria-hidden />
-      <div className="relative">
-        <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-        <p className="mt-1 text-sm text-gray-600">{description}</p>
-        <form className="mt-4 space-y-3" onSubmit={onSubmit}>
+function ActionModal({
+  title,
+  description,
+  children,
+  isOpen,
+  onClose,
+  onSubmit,
+  isSubmitting,
+}: ActionModalProps) {
+  const titleId = useId();
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen || typeof document === "undefined") {
+    return null;
+  }
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 px-4 py-6">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="relative w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-8 shadow-2xl"
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-6 top-6 inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
+          aria-label="Cerrar modal"
+        >
+          <X className="h-5 w-5" />
+        </button>
+        <div className="pr-10">
+          <h2 id={titleId} className="text-2xl font-semibold text-slate-900">
+            {title}
+          </h2>
+          <p className="mt-2 text-sm text-slate-600">{description}</p>
+        </div>
+        <form className="mt-6 space-y-4" onSubmit={onSubmit}>
           {children}
-          <button
-            type="submit"
-            className="w-full rounded-xl bg-gradient-to-r from-amber-400 via-amber-300 to-orange-300 px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm transition hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 disabled:cursor-not-allowed disabled:opacity-70"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Guardando..." : "Guardar"}
-          </button>
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-800"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isSubmitting ? "Guardando..." : "Guardar"}
+            </button>
+          </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
