@@ -1,5 +1,5 @@
 "use client";
-import { FormEvent, useState } from "react";
+import { FormEvent, useCallback, useState } from "react";
 import { motion } from "framer-motion";
 import {
   CalendarDays,
@@ -44,21 +44,111 @@ export default function Page() {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [email, setEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [footerEmail, setFooterEmail] = useState("");
+  const [isFooterSubmitting, setIsFooterSubmitting] = useState(false);
+  const [footerFeedback, setFooterFeedback] = useState<
+    { type: "success" | "error"; message: string } | null
+  >(null);
+
+  const registerLead = useCallback(async (leadEmail: string, source: string) => {
+    const response = await fetch("/api/landing/leads", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email: leadEmail, source }),
+    });
+
+    let data: unknown = null;
+
+    try {
+      data = await response.json();
+    } catch (error) {
+      console.error("Failed to parse lead response", error);
+    }
+
+    if (!response.ok) {
+      const message =
+        data &&
+        typeof data === "object" &&
+        data !== null &&
+        "error" in data &&
+        typeof (data as { error?: string }).error === "string"
+          ? (data as { error?: string }).error
+          : "No se pudo registrar tu email. Intentalo nuevamente.";
+
+      throw new Error(message);
+    }
+
+    return data;
+  }, []);
 
   const handleOpenModal = () => {
     setIsModalOpen(true);
     setEmail("");
+    setFormError(null);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEmail("");
+    setFormError(null);
   };
 
-  const handleSubmitEmail = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmitEmail = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setIsModalOpen(false);
-    router.push("/thank-you");
+    setFormError(null);
+
+    if (!email) return;
+
+    setIsSubmitting(true);
+
+    try {
+      await registerLead(email, "Modal Landing Page");
+      setIsModalOpen(false);
+      setEmail("");
+      router.push("/thank-you");
+    } catch (error) {
+      console.error("Failed to submit lead from modal", error);
+      setFormError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo registrar tu email. Intentalo nuevamente."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleFooterSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!footerEmail) return;
+
+    setFooterFeedback(null);
+    setIsFooterSubmitting(true);
+
+    try {
+      await registerLead(footerEmail, "Footer Landing Page");
+      setFooterEmail("");
+      setFooterFeedback({
+        type: "success",
+        message: "¡Listo! Te avisaremos apenas haya cupos disponibles.",
+      });
+    } catch (error) {
+      console.error("Failed to submit lead from footer", error);
+      setFooterFeedback({
+        type: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "No se pudo registrar tu email. Intentalo nuevamente.",
+      });
+    } finally {
+      setIsFooterSubmitting(false);
+    }
   };
 
   return (
@@ -660,7 +750,7 @@ export default function Page() {
             </p>
             <form
               className="mt-4 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3"
-              onSubmit={(e) => e.preventDefault()}
+              onSubmit={handleFooterSubmit}
             >
               <label htmlFor="email-footer" className="sr-only">
                 Tu email
@@ -670,15 +760,29 @@ export default function Page() {
                 type="email"
                 required
                 placeholder="tu@email.com"
+                value={footerEmail}
+                onChange={(event) => setFooterEmail(event.target.value)}
                 className="w-full rounded-xl border border-transparent bg-gray-800 px-4 py-3 text-base text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-accent/60"
               />
               <button
                 type="submit"
-                className="rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-gray-900 shadow-sm hover:bg-accent-hover transition-all"
+                disabled={isFooterSubmitting}
+                className="rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-gray-900 shadow-sm hover:bg-accent-hover transition-all disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                Quiero enterarme
+                {isFooterSubmitting ? "Enviando..." : "Quiero enterarme"}
               </button>
             </form>
+            {footerFeedback ? (
+              <p
+                className={`mt-2 text-sm ${
+                  footerFeedback.type === "success"
+                    ? "text-emerald-400"
+                    : "text-rose-400"
+                }`}
+              >
+                {footerFeedback.message}
+              </p>
+            ) : null}
           </div>
 
           <div className="flex flex-col items-start md:items-end gap-6">
@@ -758,11 +862,15 @@ export default function Page() {
                   className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base outline-none focus:ring-2 focus:ring-accent/60 focus:border-accent"
                 />
               </div>
+              {formError ? (
+                <p className="text-sm text-rose-600">{formError}</p>
+              ) : null}
               <button
                 type="submit"
-                className="w-full rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-gray-900 shadow-sm hover:bg-accent-hover transition"
+                disabled={isSubmitting}
+                className="w-full rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-gray-900 shadow-sm hover:bg-accent-hover transition disabled:cursor-not-allowed disabled:opacity-70"
               >
-                Enviarme el enlace
+                {isSubmitting ? "Enviando..." : "Enviarme el enlace"}
               </button>
             </form>
           </motion.div>
