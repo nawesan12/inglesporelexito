@@ -1,58 +1,15 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { ContactStatus } from "@/generated/client";
-
-function sanitizeString(value: unknown) {
-  if (typeof value !== "string") return undefined;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : undefined;
-}
-
-function sanitizeEmail(value: unknown) {
-  const email = sanitizeString(value)?.toLowerCase();
-  if (!email) return undefined;
-
-  if (!email.includes("@")) return undefined;
-
-  return email;
-}
-
-function capitalize(value: string) {
-  if (!value) return value;
-  return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
-}
-
-function deriveContactName(email: string) {
-  const [localPart] = email.split("@");
-
-  if (!localPart) {
-    return { firstName: "Lead", lastName: "Landing" };
-  }
-
-  const cleaned = localPart.replace(/[^a-zA-Z0-9]+/g, " ").trim();
-
-  if (!cleaned) {
-    return { firstName: "Lead", lastName: "Landing" };
-  }
-
-  const parts = cleaned
-    .split(/\s+/)
-    .filter(Boolean)
-    .map(capitalize);
-
-  if (parts.length === 0) {
-    return { firstName: "Lead", lastName: "Landing" };
-  }
-
-  if (parts.length === 1) {
-    return { firstName: parts[0], lastName: "Lead" };
-  }
-
-  return {
-    firstName: parts[0],
-    lastName: parts.slice(1).join(" ") || "Landing",
-  };
-}
+import {
+  DEFAULT_CONTACT_NOTES,
+  DEFAULT_CONTACT_SOURCE,
+  ensureContactNames,
+  hasMeaningfulText,
+  sanitizeEmail,
+  sanitizeName,
+  sanitizeString,
+} from "@/lib/contact-utils";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(request: Request) {
   try {
@@ -66,10 +23,17 @@ export async function POST(request: Request) {
       );
     }
 
-    const source = sanitizeString(payload?.source) ?? "Landing Page";
-    const notes =
-      sanitizeString(payload?.notes) ??
-      "Registro automático desde la landing page";
+    const providedFirstName = sanitizeName(payload?.firstName);
+    const providedLastName = sanitizeName(payload?.lastName);
+
+    const { firstName, lastName } = ensureContactNames({
+      email,
+      firstName: providedFirstName,
+      lastName: providedLastName,
+    });
+
+    const source = sanitizeString(payload?.source) ?? DEFAULT_CONTACT_SOURCE;
+    const notes = sanitizeString(payload?.notes) ?? DEFAULT_CONTACT_NOTES;
 
     const existing = await prisma.contact.findUnique({
       where: { email },
@@ -77,6 +41,24 @@ export async function POST(request: Request) {
 
     if (existing) {
       const updateData: Record<string, string> = {};
+
+      if (
+        providedFirstName &&
+        providedFirstName !== existing.firstName
+      ) {
+        updateData.firstName = providedFirstName;
+      } else if (!hasMeaningfulText(existing.firstName)) {
+        updateData.firstName = firstName;
+      }
+
+      if (
+        providedLastName &&
+        providedLastName !== existing.lastName
+      ) {
+        updateData.lastName = providedLastName;
+      } else if (!hasMeaningfulText(existing.lastName)) {
+        updateData.lastName = lastName;
+      }
 
       if (!existing.source && source) {
         updateData.source = source;
@@ -97,8 +79,6 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ contact });
     }
-
-    const { firstName, lastName } = deriveContactName(email);
 
     const contact = await prisma.contact.create({
       data: {
