@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { ContactStatus } from "@/generated/client";
+import {
+  ensureContactNames,
+  hasMeaningfulText,
+  sanitizeEmail,
+  sanitizeName,
+  sanitizeString,
+} from "@/lib/contact-utils";
+import { prisma } from "@/lib/prisma";
 
 const STATUS_VALUES = new Set(Object.values(ContactStatus));
-
-function sanitizeString(value: unknown) {
-  if (typeof value !== "string") return undefined;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : undefined;
-}
 
 export async function GET() {
   try {
@@ -35,13 +36,27 @@ export async function POST(request: Request) {
   try {
     const payload = await request.json();
 
-    const firstName = sanitizeString(payload.firstName);
-    const lastName = sanitizeString(payload.lastName);
-    const email = sanitizeString(payload.email);
+    const email = sanitizeEmail(payload.email);
 
-    if (!firstName || !lastName || !email) {
+    if (!email) {
       return NextResponse.json(
-        { error: "Nombre, apellido y email son obligatorios" },
+        { error: "Necesitamos un email válido para guardar el contacto" },
+        { status: 400 }
+      );
+    }
+
+    const providedFirstName = sanitizeName(payload.firstName);
+    const providedLastName = sanitizeName(payload.lastName);
+
+    const { firstName, lastName } = ensureContactNames({
+      email,
+      firstName: providedFirstName,
+      lastName: providedLastName,
+    });
+
+    if (!hasMeaningfulText(firstName) || !hasMeaningfulText(lastName)) {
+      return NextResponse.json(
+        { error: "No se pudo determinar un nombre válido para el contacto" },
         { status: 400 }
       );
     }
@@ -141,17 +156,44 @@ export async function PATCH(request: Request) {
 
     const updateData: Record<string, unknown> = {};
 
-    const firstName = sanitizeString(payload.firstName);
-    const lastName = sanitizeString(payload.lastName);
-    const email = sanitizeString(payload.email);
+    const firstName = sanitizeName(payload.firstName);
+    const lastName = sanitizeName(payload.lastName);
+    const email =
+      payload.email === undefined ? undefined : sanitizeEmail(payload.email);
     const phone = sanitizeString(payload.phone);
     const position = sanitizeString(payload.position);
     const source = sanitizeString(payload.source);
     const notes = sanitizeString(payload.notes);
 
-    if (firstName !== undefined) updateData.firstName = firstName;
-    if (lastName !== undefined) updateData.lastName = lastName;
-    if (email !== undefined) updateData.email = email;
+    if (payload.firstName !== undefined) {
+      if (!firstName) {
+        return NextResponse.json(
+          { error: "El nombre no puede estar vacío" },
+          { status: 400 }
+        );
+      }
+      updateData.firstName = firstName;
+    }
+
+    if (payload.lastName !== undefined) {
+      if (!lastName) {
+        return NextResponse.json(
+          { error: "El apellido no puede estar vacío" },
+          { status: 400 }
+        );
+      }
+      updateData.lastName = lastName;
+    }
+
+    if (payload.email !== undefined) {
+      if (!email) {
+        return NextResponse.json(
+          { error: "Necesitamos un email válido" },
+          { status: 400 }
+        );
+      }
+      updateData.email = email;
+    }
     if (phone !== undefined) updateData.phone = phone;
     if (position !== undefined) updateData.position = position;
     if (source !== undefined) updateData.source = source;
