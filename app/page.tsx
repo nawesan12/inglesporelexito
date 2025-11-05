@@ -48,42 +48,46 @@ export default function Page() {
   const [formError, setFormError] = useState<string | null>(null);
   const [footerEmail, setFooterEmail] = useState("");
   const [isFooterSubmitting, setIsFooterSubmitting] = useState(false);
-  const [footerFeedback, setFooterFeedback] = useState<
-    { type: "success" | "error"; message: string } | null
-  >(null);
+  const [footerFeedback, setFooterFeedback] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
 
-  const registerLead = useCallback(async (leadEmail: string, source: string) => {
-    const response = await fetch("/api/landing/leads", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email: leadEmail, source }),
-    });
+  const registerLead = useCallback(
+    async (leadEmail: string, source: string) => {
+      const response = await fetch("/api/landing/leads", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: leadEmail, source }),
+      });
 
-    let data: unknown = null;
+      let data: unknown = null;
 
-    try {
-      data = await response.json();
-    } catch (error) {
-      console.error("Failed to parse lead response", error);
-    }
+      try {
+        data = await response.json();
+      } catch (error) {
+        console.error("Failed to parse lead response", error);
+      }
 
-    if (!response.ok) {
-      const message =
-        data &&
-        typeof data === "object" &&
-        data !== null &&
-        "error" in data &&
-        typeof (data as { error?: string }).error === "string"
-          ? (data as { error?: string }).error
-          : "No se pudo registrar tu email. Intentalo nuevamente.";
+      if (!response.ok) {
+        const message =
+          data &&
+          typeof data === "object" &&
+          data !== null &&
+          "error" in data &&
+          typeof (data as { error?: string }).error === "string"
+            ? (data as { error?: string }).error
+            : "No se pudo registrar tu email. Intentalo nuevamente.";
 
-      throw new Error(message);
-    }
+        throw new Error(message);
+      }
 
-    return data;
-  }, []);
+      return data;
+    },
+    [],
+  );
 
   const handleOpenModal = () => {
     setIsModalOpen(true);
@@ -115,7 +119,7 @@ export default function Page() {
       setFormError(
         error instanceof Error
           ? error.message
-          : "No se pudo registrar tu email. Intentalo nuevamente."
+          : "No se pudo registrar tu email. Intentalo nuevamente.",
       );
     } finally {
       setIsSubmitting(false);
@@ -609,7 +613,7 @@ export default function Page() {
               viewport={{ once: true }}
               className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl"
             >
-              Reservá tu lugar en la próxima cohorte
+              Reservá tu lugar
             </motion.h3>
             <motion.p //@ts-expect-error bla
               variants={fadeUp}
