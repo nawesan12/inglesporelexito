@@ -35,6 +35,32 @@ export async function POST(request: Request) {
     const source = sanitizeString(payload?.source) ?? DEFAULT_CONTACT_SOURCE;
     const notes = sanitizeString(payload?.notes) ?? DEFAULT_CONTACT_NOTES;
 
+    if (!process.env.DATABASE_URL) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn(
+          "DATABASE_URL is not configured. Skipping landing lead persistence.",
+        );
+      }
+
+      return NextResponse.json(
+        {
+          contact: {
+            id: `temp-${crypto.randomUUID()}`,
+            email,
+            firstName,
+            lastName,
+            source,
+            notes,
+            status: ContactStatus.LEAD,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+          persisted: false,
+        },
+        { status: 201 },
+      );
+    }
+
     const existing = await prisma.contact.findUnique({
       where: { email },
     });
