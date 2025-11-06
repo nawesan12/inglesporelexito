@@ -381,16 +381,33 @@ export function CRMClient({ initialData }: CRMClientProps) {
         isOpen={activeAction === "contact"}
         onClose={() => setActiveAction(null)}
         title="Nuevo contacto"
-        description="Completá la información del lead para iniciar el relacionamiento."
+        description="Empezá guardando el email. Podés completar el resto de los datos ahora o más adelante."
         onSubmit={createSubmitHandler(() => setActiveAction(null))}
         isSubmitting={isSubmitting}
       >
         <input type="hidden" name="endpoint" value="/api/crm/contacts" />
+        <TextField
+          label="Email"
+          name="email"
+          type="email"
+          required
+          placeholder="lead@ejemplo.com"
+        />
+        <p className="text-xs text-slate-500">
+          Estos campos son opcionales y podés completarlos más tarde desde el CRM.
+        </p>
         <div className="grid gap-4 sm:grid-cols-2">
-          <TextField label="Nombre" name="firstName" required />
-          <TextField label="Apellido" name="lastName" required />
+          <TextField
+            label="Nombre (opcional)"
+            name="firstName"
+            placeholder="Nombre"
+          />
+          <TextField
+            label="Apellido (opcional)"
+            name="lastName"
+            placeholder="Apellido"
+          />
         </div>
-        <TextField label="Email" name="email" type="email" required />
         <TextField label="Teléfono" name="phone" />
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField label="Cargo / Rol" name="position" />
