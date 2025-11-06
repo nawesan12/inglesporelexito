@@ -192,7 +192,7 @@ export default function Page() {
             animate="show"
             className="text-2xl font-bold text-gray-900"
           >
-            Inglés por el Éxito
+            Inglés para el éxito
           </motion.h1>
           <motion.div
             variants={stagger}
