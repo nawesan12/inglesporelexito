@@ -190,8 +190,8 @@ export type ContactGroupByArgs<ExtArgs extends runtime.Types.Extensions.Internal
 
 export type ContactGroupByOutputType = {
   id: string
-  firstName: string
-  lastName: string
+  firstName: string | null
+  lastName: string | null
   email: string
   phone: string | null
   status: $Enums.ContactStatus
@@ -226,8 +226,8 @@ export type ContactWhereInput = {
   OR?: Prisma.ContactWhereInput[]
   NOT?: Prisma.ContactWhereInput | Prisma.ContactWhereInput[]
   id?: Prisma.StringFilter<"Contact"> | string
-  firstName?: Prisma.StringFilter<"Contact"> | string
-  lastName?: Prisma.StringFilter<"Contact"> | string
+  firstName?: Prisma.StringNullableFilter<"Contact"> | string | null
+  lastName?: Prisma.StringNullableFilter<"Contact"> | string | null
   email?: Prisma.StringFilter<"Contact"> | string
   phone?: Prisma.StringNullableFilter<"Contact"> | string | null
   status?: Prisma.EnumContactStatusFilter<"Contact"> | $Enums.ContactStatus
@@ -245,8 +245,8 @@ export type ContactWhereInput = {
 
 export type ContactOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  firstName?: Prisma.SortOrder
-  lastName?: Prisma.SortOrder
+  firstName?: Prisma.SortOrderInput | Prisma.SortOrder
+  lastName?: Prisma.SortOrderInput | Prisma.SortOrder
   email?: Prisma.SortOrder
   phone?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -268,8 +268,8 @@ export type ContactWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.ContactWhereInput | Prisma.ContactWhereInput[]
   OR?: Prisma.ContactWhereInput[]
   NOT?: Prisma.ContactWhereInput | Prisma.ContactWhereInput[]
-  firstName?: Prisma.StringFilter<"Contact"> | string
-  lastName?: Prisma.StringFilter<"Contact"> | string
+  firstName?: Prisma.StringNullableFilter<"Contact"> | string | null
+  lastName?: Prisma.StringNullableFilter<"Contact"> | string | null
   phone?: Prisma.StringNullableFilter<"Contact"> | string | null
   status?: Prisma.EnumContactStatusFilter<"Contact"> | $Enums.ContactStatus
   position?: Prisma.StringNullableFilter<"Contact"> | string | null
@@ -286,8 +286,8 @@ export type ContactWhereUniqueInput = Prisma.AtLeast<{
 
 export type ContactOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  firstName?: Prisma.SortOrder
-  lastName?: Prisma.SortOrder
+  firstName?: Prisma.SortOrderInput | Prisma.SortOrder
+  lastName?: Prisma.SortOrderInput | Prisma.SortOrder
   email?: Prisma.SortOrder
   phone?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -307,8 +307,8 @@ export type ContactScalarWhereWithAggregatesInput = {
   OR?: Prisma.ContactScalarWhereWithAggregatesInput[]
   NOT?: Prisma.ContactScalarWhereWithAggregatesInput | Prisma.ContactScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Contact"> | string
-  firstName?: Prisma.StringWithAggregatesFilter<"Contact"> | string
-  lastName?: Prisma.StringWithAggregatesFilter<"Contact"> | string
+  firstName?: Prisma.StringNullableWithAggregatesFilter<"Contact"> | string | null
+  lastName?: Prisma.StringNullableWithAggregatesFilter<"Contact"> | string | null
   email?: Prisma.StringWithAggregatesFilter<"Contact"> | string
   phone?: Prisma.StringNullableWithAggregatesFilter<"Contact"> | string | null
   status?: Prisma.EnumContactStatusWithAggregatesFilter<"Contact"> | $Enums.ContactStatus
@@ -322,8 +322,8 @@ export type ContactScalarWhereWithAggregatesInput = {
 
 export type ContactCreateInput = {
   id?: string
-  firstName: string
-  lastName: string
+  firstName?: string | null
+  lastName?: string | null
   email: string
   phone?: string | null
   status?: $Enums.ContactStatus
@@ -340,8 +340,8 @@ export type ContactCreateInput = {
 
 export type ContactUncheckedCreateInput = {
   id?: string
-  firstName: string
-  lastName: string
+  firstName?: string | null
+  lastName?: string | null
   email: string
   phone?: string | null
   status?: $Enums.ContactStatus
@@ -358,8 +358,8 @@ export type ContactUncheckedCreateInput = {
 
 export type ContactUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  firstName?: Prisma.StringFieldUpdateOperationsInput | string
-  lastName?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumContactStatusFieldUpdateOperationsInput | $Enums.ContactStatus
@@ -376,8 +376,8 @@ export type ContactUpdateInput = {
 
 export type ContactUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  firstName?: Prisma.StringFieldUpdateOperationsInput | string
-  lastName?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumContactStatusFieldUpdateOperationsInput | $Enums.ContactStatus
@@ -394,8 +394,8 @@ export type ContactUncheckedUpdateInput = {
 
 export type ContactCreateManyInput = {
   id?: string
-  firstName: string
-  lastName: string
+  firstName?: string | null
+  lastName?: string | null
   email: string
   phone?: string | null
   status?: $Enums.ContactStatus
@@ -409,8 +409,8 @@ export type ContactCreateManyInput = {
 
 export type ContactUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  firstName?: Prisma.StringFieldUpdateOperationsInput | string
-  lastName?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumContactStatusFieldUpdateOperationsInput | $Enums.ContactStatus
@@ -423,8 +423,8 @@ export type ContactUpdateManyMutationInput = {
 
 export type ContactUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  firstName?: Prisma.StringFieldUpdateOperationsInput | string
-  lastName?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumContactStatusFieldUpdateOperationsInput | $Enums.ContactStatus
@@ -595,8 +595,8 @@ export type ContactUpdateOneWithoutInteractionsNestedInput = {
 
 export type ContactCreateWithoutCompanyInput = {
   id?: string
-  firstName: string
-  lastName: string
+  firstName?: string | null
+  lastName?: string | null
   email: string
   phone?: string | null
   status?: $Enums.ContactStatus
@@ -612,8 +612,8 @@ export type ContactCreateWithoutCompanyInput = {
 
 export type ContactUncheckedCreateWithoutCompanyInput = {
   id?: string
-  firstName: string
-  lastName: string
+  firstName?: string | null
+  lastName?: string | null
   email: string
   phone?: string | null
   status?: $Enums.ContactStatus
@@ -658,8 +658,8 @@ export type ContactScalarWhereInput = {
   OR?: Prisma.ContactScalarWhereInput[]
   NOT?: Prisma.ContactScalarWhereInput | Prisma.ContactScalarWhereInput[]
   id?: Prisma.StringFilter<"Contact"> | string
-  firstName?: Prisma.StringFilter<"Contact"> | string
-  lastName?: Prisma.StringFilter<"Contact"> | string
+  firstName?: Prisma.StringNullableFilter<"Contact"> | string | null
+  lastName?: Prisma.StringNullableFilter<"Contact"> | string | null
   email?: Prisma.StringFilter<"Contact"> | string
   phone?: Prisma.StringNullableFilter<"Contact"> | string | null
   status?: Prisma.EnumContactStatusFilter<"Contact"> | $Enums.ContactStatus
@@ -673,8 +673,8 @@ export type ContactScalarWhereInput = {
 
 export type ContactCreateWithoutDealsInput = {
   id?: string
-  firstName: string
-  lastName: string
+  firstName?: string | null
+  lastName?: string | null
   email: string
   phone?: string | null
   status?: $Enums.ContactStatus
@@ -690,8 +690,8 @@ export type ContactCreateWithoutDealsInput = {
 
 export type ContactUncheckedCreateWithoutDealsInput = {
   id?: string
-  firstName: string
-  lastName: string
+  firstName?: string | null
+  lastName?: string | null
   email: string
   phone?: string | null
   status?: $Enums.ContactStatus
@@ -723,8 +723,8 @@ export type ContactUpdateToOneWithWhereWithoutDealsInput = {
 
 export type ContactUpdateWithoutDealsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  firstName?: Prisma.StringFieldUpdateOperationsInput | string
-  lastName?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumContactStatusFieldUpdateOperationsInput | $Enums.ContactStatus
@@ -740,8 +740,8 @@ export type ContactUpdateWithoutDealsInput = {
 
 export type ContactUncheckedUpdateWithoutDealsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  firstName?: Prisma.StringFieldUpdateOperationsInput | string
-  lastName?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumContactStatusFieldUpdateOperationsInput | $Enums.ContactStatus
@@ -757,8 +757,8 @@ export type ContactUncheckedUpdateWithoutDealsInput = {
 
 export type ContactCreateWithoutTasksInput = {
   id?: string
-  firstName: string
-  lastName: string
+  firstName?: string | null
+  lastName?: string | null
   email: string
   phone?: string | null
   status?: $Enums.ContactStatus
@@ -774,8 +774,8 @@ export type ContactCreateWithoutTasksInput = {
 
 export type ContactUncheckedCreateWithoutTasksInput = {
   id?: string
-  firstName: string
-  lastName: string
+  firstName?: string | null
+  lastName?: string | null
   email: string
   phone?: string | null
   status?: $Enums.ContactStatus
@@ -807,8 +807,8 @@ export type ContactUpdateToOneWithWhereWithoutTasksInput = {
 
 export type ContactUpdateWithoutTasksInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  firstName?: Prisma.StringFieldUpdateOperationsInput | string
-  lastName?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumContactStatusFieldUpdateOperationsInput | $Enums.ContactStatus
@@ -824,8 +824,8 @@ export type ContactUpdateWithoutTasksInput = {
 
 export type ContactUncheckedUpdateWithoutTasksInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  firstName?: Prisma.StringFieldUpdateOperationsInput | string
-  lastName?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumContactStatusFieldUpdateOperationsInput | $Enums.ContactStatus
@@ -841,8 +841,8 @@ export type ContactUncheckedUpdateWithoutTasksInput = {
 
 export type ContactCreateWithoutInteractionsInput = {
   id?: string
-  firstName: string
-  lastName: string
+  firstName?: string | null
+  lastName?: string | null
   email: string
   phone?: string | null
   status?: $Enums.ContactStatus
@@ -858,8 +858,8 @@ export type ContactCreateWithoutInteractionsInput = {
 
 export type ContactUncheckedCreateWithoutInteractionsInput = {
   id?: string
-  firstName: string
-  lastName: string
+  firstName?: string | null
+  lastName?: string | null
   email: string
   phone?: string | null
   status?: $Enums.ContactStatus
@@ -891,8 +891,8 @@ export type ContactUpdateToOneWithWhereWithoutInteractionsInput = {
 
 export type ContactUpdateWithoutInteractionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  firstName?: Prisma.StringFieldUpdateOperationsInput | string
-  lastName?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumContactStatusFieldUpdateOperationsInput | $Enums.ContactStatus
@@ -908,8 +908,8 @@ export type ContactUpdateWithoutInteractionsInput = {
 
 export type ContactUncheckedUpdateWithoutInteractionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  firstName?: Prisma.StringFieldUpdateOperationsInput | string
-  lastName?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumContactStatusFieldUpdateOperationsInput | $Enums.ContactStatus
@@ -925,8 +925,8 @@ export type ContactUncheckedUpdateWithoutInteractionsInput = {
 
 export type ContactCreateManyCompanyInput = {
   id?: string
-  firstName: string
-  lastName: string
+  firstName?: string | null
+  lastName?: string | null
   email: string
   phone?: string | null
   status?: $Enums.ContactStatus
@@ -939,8 +939,8 @@ export type ContactCreateManyCompanyInput = {
 
 export type ContactUpdateWithoutCompanyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  firstName?: Prisma.StringFieldUpdateOperationsInput | string
-  lastName?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumContactStatusFieldUpdateOperationsInput | $Enums.ContactStatus
@@ -956,8 +956,8 @@ export type ContactUpdateWithoutCompanyInput = {
 
 export type ContactUncheckedUpdateWithoutCompanyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  firstName?: Prisma.StringFieldUpdateOperationsInput | string
-  lastName?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumContactStatusFieldUpdateOperationsInput | $Enums.ContactStatus
@@ -973,8 +973,8 @@ export type ContactUncheckedUpdateWithoutCompanyInput = {
 
 export type ContactUncheckedUpdateManyWithoutCompanyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  firstName?: Prisma.StringFieldUpdateOperationsInput | string
-  lastName?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email?: Prisma.StringFieldUpdateOperationsInput | string
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumContactStatusFieldUpdateOperationsInput | $Enums.ContactStatus
@@ -1126,8 +1126,8 @@ export type $ContactPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
-    firstName: string
-    lastName: string
+    firstName: string | null
+    lastName: string | null
     email: string
     phone: string | null
     status: $Enums.ContactStatus
