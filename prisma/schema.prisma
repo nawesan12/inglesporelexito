@@ -55,8 +55,8 @@ model Company {
 
 model Contact {
   id           String        @id @default(cuid())
-  firstName    String
-  lastName     String
+  firstName    String?
+  lastName     String?
   email        String        @unique
   phone        String?
   status       ContactStatus @default(LEAD)

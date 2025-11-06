@@ -38,6 +38,7 @@ import {
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { getContactDisplayName } from "@/lib/contact-utils";
 
 interface CRMClientProps {
   initialData: CRMOverview;
@@ -49,7 +50,7 @@ type ResourceType = "contacts" | "deals" | "tasks" | "interactions";
 
 type DeleteHandler = (
   resource: ResourceType,
-  id: string
+  id: string,
 ) => Promise<void> | void;
 
 const PIPELINE_STAGES: Array<CRMDeal["stage"]> = [
@@ -73,7 +74,7 @@ export function CRMClient({ initialData }: CRMClientProps) {
   const [deals, setDeals] = useState<CRMDeal[]>(initialData.deals);
   const [tasks, setTasks] = useState<CRMTask[]>(initialData.tasks);
   const [interactions, setInteractions] = useState<CRMInteraction[]>(
-    initialData.interactions
+    initialData.interactions,
   );
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -83,9 +84,11 @@ export function CRMClient({ initialData }: CRMClientProps) {
   const summary = useMemo(() => {
     const totalPipelineValue = deals.reduce((sum, deal) => sum + deal.value, 0);
     const openDeals = deals.filter(
-      (deal) => deal.stage !== "WON" && deal.stage !== "LOST"
+      (deal) => deal.stage !== "WON" && deal.stage !== "LOST",
     );
-    const activeContacts = contacts.filter((contact) => contact.status === "ACTIVE");
+    const activeContacts = contacts.filter(
+      (contact) => contact.status === "ACTIVE",
+    );
     const overdueTasks = tasks.filter((task) => {
       if (!task.dueDate) return false;
       if (task.status === "COMPLETED") return false;
@@ -108,142 +111,158 @@ export function CRMClient({ initialData }: CRMClientProps) {
   }, [contacts, deals, tasks, interactions]);
 
   const createSubmitHandler = useCallback(
-    (onSuccess?: () => void) =>
-      async (event: FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        setFeedback(null);
-        setIsSubmitting(true);
+    (onSuccess?: () => void) => async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      setFeedback(null);
+      setIsSubmitting(true);
 
-        const formElement = event.currentTarget;
-        const form = new FormData(formElement);
-        const endpoint = form.get("endpoint");
-        const method = (form.get("method") as string | null) ?? "POST";
+      const formElement = event.currentTarget;
+      const form = new FormData(formElement);
+      const endpoint = form.get("endpoint");
+      const method = (form.get("method") as string | null) ?? "POST";
 
-        if (typeof endpoint !== "string") {
-          setFeedback({ type: "error", message: "No se pudo identificar la acción" });
-          setIsSubmitting(false);
-          return;
+      if (typeof endpoint !== "string") {
+        setFeedback({
+          type: "error",
+          message: "No se pudo identificar la acción",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      const payload = Object.fromEntries(
+        Array.from(form.entries()).filter(
+          ([key]) => !["endpoint", "method"].includes(key),
+        ),
+      ) as Record<string, FormDataEntryValue | undefined>;
+
+      // Clean up empty strings so that the API can handle optional values gracefully
+      Object.keys(payload).forEach((key) => {
+        if (typeof payload[key] === "string" && payload[key] === "") {
+          delete payload[key];
         }
+      });
 
-        const payload = Object.fromEntries(
-          Array.from(form.entries()).filter(([key]) => !["endpoint", "method"].includes(key))
-        ) as Record<string, FormDataEntryValue | undefined>;
-
-        // Clean up empty strings so that the API can handle optional values gracefully
-        Object.keys(payload).forEach((key) => {
-          if (typeof payload[key] === "string" && payload[key] === "") {
-            delete payload[key];
-          }
+      try {
+        const response = await fetch(endpoint, {
+          method,
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
         });
 
-        try {
-          const response = await fetch(endpoint, {
-            method,
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-          });
+        const data = await response.json();
 
-          const data = await response.json();
-
-          if (!response.ok) {
-            throw new Error(data.error ?? "No se pudo completar la acción");
-          }
-
-          if ("contact" in data) {
-            setContacts((prev) => {
-              const otherContacts = prev.filter((contact) => contact.id !== data.contact.id);
-              return [data.contact, ...otherContacts];
-            });
-          }
-
-          if ("deal" in data) {
-            setDeals((prev) => {
-              const otherDeals = prev.filter((deal) => deal.id !== data.deal.id);
-              return [data.deal, ...otherDeals];
-            });
-          }
-
-          if ("task" in data) {
-            setTasks((prev) => {
-              const otherTasks = prev.filter((task) => task.id !== data.task.id);
-              return [data.task, ...otherTasks];
-            });
-          }
-
-          if ("interaction" in data) {
-            setInteractions((prev) => {
-              const otherInteractions = prev.filter(
-                (interaction) => interaction.id !== data.interaction.id
-              );
-              return [data.interaction, ...otherInteractions];
-            });
-          }
-
-          setFeedback({ type: "success", message: "Cambios guardados con éxito" });
-          formElement.reset();
-          onSuccess?.();
-        } catch (error) {
-          console.error(error);
-          setFeedback({
-            type: "error",
-            message:
-              error instanceof Error ? error.message : "Ocurrió un problema inesperado",
-          });
-        } finally {
-          setIsSubmitting(false);
+        if (!response.ok) {
+          throw new Error(data.error ?? "No se pudo completar la acción");
         }
-      },
-    []
+
+        if ("contact" in data) {
+          setContacts((prev) => {
+            const otherContacts = prev.filter(
+              (contact) => contact.id !== data.contact.id,
+            );
+            return [data.contact, ...otherContacts];
+          });
+        }
+
+        if ("deal" in data) {
+          setDeals((prev) => {
+            const otherDeals = prev.filter((deal) => deal.id !== data.deal.id);
+            return [data.deal, ...otherDeals];
+          });
+        }
+
+        if ("task" in data) {
+          setTasks((prev) => {
+            const otherTasks = prev.filter((task) => task.id !== data.task.id);
+            return [data.task, ...otherTasks];
+          });
+        }
+
+        if ("interaction" in data) {
+          setInteractions((prev) => {
+            const otherInteractions = prev.filter(
+              (interaction) => interaction.id !== data.interaction.id,
+            );
+            return [data.interaction, ...otherInteractions];
+          });
+        }
+
+        setFeedback({
+          type: "success",
+          message: "Cambios guardados con éxito",
+        });
+        formElement.reset();
+        onSuccess?.();
+      } catch (error) {
+        console.error(error);
+        setFeedback({
+          type: "error",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Ocurrió un problema inesperado",
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [],
   );
 
-  const handleDelete = useCallback(async (resource: ResourceType, id: string) => {
-    setFeedback(null);
-    try {
-      const response = await fetch(`/api/crm/${resource}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ id }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error ?? "No se pudo eliminar el registro");
-      }
+  const handleDelete = useCallback(
+    async (resource: ResourceType, id: string) => {
+      setFeedback(null);
+      try {
+        const response = await fetch(`/api/crm/${resource}`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ id }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error ?? "No se pudo eliminar el registro");
+        }
 
-      if (resource === "contacts") {
-        setContacts((prev) => prev.filter((contact) => contact.id !== id));
-        setDeals((prev) => prev.filter((deal) => deal.contactId !== id));
-        setTasks((prev) => prev.filter((task) => task.contactId !== id));
-      }
+        if (resource === "contacts") {
+          setContacts((prev) => prev.filter((contact) => contact.id !== id));
+          setDeals((prev) => prev.filter((deal) => deal.contactId !== id));
+          setTasks((prev) => prev.filter((task) => task.contactId !== id));
+        }
 
-      if (resource === "deals") {
-        setDeals((prev) => prev.filter((deal) => deal.id !== id));
-        setTasks((prev) => prev.filter((task) => task.dealId !== id));
-      }
+        if (resource === "deals") {
+          setDeals((prev) => prev.filter((deal) => deal.id !== id));
+          setTasks((prev) => prev.filter((task) => task.dealId !== id));
+        }
 
-      if (resource === "tasks") {
-        setTasks((prev) => prev.filter((task) => task.id !== id));
-      }
+        if (resource === "tasks") {
+          setTasks((prev) => prev.filter((task) => task.id !== id));
+        }
 
-      if (resource === "interactions") {
-        setInteractions((prev) =>
-          prev.filter((interaction) => interaction.id !== id)
-        );
-      }
+        if (resource === "interactions") {
+          setInteractions((prev) =>
+            prev.filter((interaction) => interaction.id !== id),
+          );
+        }
 
-      setFeedback({ type: "success", message: "Registro eliminado" });
-    } catch (error) {
-      console.error(error);
-      setFeedback({
-        type: "error",
-        message:
-          error instanceof Error ? error.message : "No se pudo eliminar el registro",
-      });
-    }
-  }, []);
+        setFeedback({ type: "success", message: "Registro eliminado" });
+      } catch (error) {
+        console.error(error);
+        setFeedback({
+          type: "error",
+          message:
+            error instanceof Error
+              ? error.message
+              : "No se pudo eliminar el registro",
+        });
+      }
+    },
+    [],
+  );
 
   return (
     <section className="relative mx-auto w-full max-w-7xl overflow-hidden px-6 py-12">
@@ -253,8 +272,14 @@ export function CRMClient({ initialData }: CRMClientProps) {
         <div className="absolute bottom-0 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-slate-200/40 blur-3xl" />
       </div>
       <header className="relative mb-12 overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-white/95 via-white/80 to-slate-50 p-10 shadow-2xl backdrop-blur">
-        <div aria-hidden className="absolute -right-28 -top-32 h-72 w-72 rounded-full bg-sky-200/40 blur-3xl" />
-        <div aria-hidden className="absolute -left-28 bottom-0 h-80 w-80 rounded-full bg-indigo-200/30 blur-3xl" />
+        <div
+          aria-hidden
+          className="absolute -right-28 -top-32 h-72 w-72 rounded-full bg-sky-200/40 blur-3xl"
+        />
+        <div
+          aria-hidden
+          className="absolute -left-28 bottom-0 h-80 w-80 rounded-full bg-indigo-200/30 blur-3xl"
+        />
         <div className="relative flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
           <div className="max-w-2xl">
             <span className="inline-flex items-center gap-2 rounded-full bg-indigo-100/80 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-indigo-700">
@@ -264,8 +289,9 @@ export function CRMClient({ initialData }: CRMClientProps) {
               Gestión comercial elegante y enfocada en resultados
             </h1>
             <p className="mt-3 text-base text-slate-600">
-              Centralizá contactos, oportunidades y tareas en un espacio diseñado para equipos modernos.
-              Visualizá el avance de cada relación en tiempo real y asegurá un seguimiento impecable.
+              Centralizá contactos, oportunidades y tareas en un espacio
+              diseñado para equipos modernos. Visualizá el avance de cada
+              relación en tiempo real y asegurá un seguimiento impecable.
             </p>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
@@ -291,7 +317,9 @@ export function CRMClient({ initialData }: CRMClientProps) {
               Icon={Timer}
               highlight={summary.overdueTasks > 0}
               label="Tareas vencidas"
-              note={summary.overdueTasks > 0 ? "Prioridad inmediata" : "Todo al día"}
+              note={
+                summary.overdueTasks > 0 ? "Prioridad inmediata" : "Todo al día"
+              }
               value={summary.overdueTasks.toString()}
             />
             <MetricCard
@@ -341,11 +369,20 @@ export function CRMClient({ initialData }: CRMClientProps) {
             </div>
           ) : null}
 
-          {view === "pipeline" && <PipelineView deals={deals} onDelete={handleDelete} />}
-          {view === "contacts" && <ContactsView contacts={contacts} onDelete={handleDelete} />}
-          {view === "tasks" && <TasksView tasks={tasks} onDelete={handleDelete} />}
+          {view === "pipeline" && (
+            <PipelineView deals={deals} onDelete={handleDelete} />
+          )}
+          {view === "contacts" && (
+            <ContactsView contacts={contacts} onDelete={handleDelete} />
+          )}
+          {view === "tasks" && (
+            <TasksView tasks={tasks} onDelete={handleDelete} />
+          )}
           {view === "interactions" && (
-            <InteractionsView interactions={interactions} onDelete={handleDelete} />
+            <InteractionsView
+              interactions={interactions}
+              onDelete={handleDelete}
+            />
           )}
         </div>
 
@@ -394,7 +431,8 @@ export function CRMClient({ initialData }: CRMClientProps) {
           placeholder="lead@ejemplo.com"
         />
         <p className="text-xs text-slate-500">
-          Estos campos son opcionales y podés completarlos más tarde desde el CRM.
+          Estos campos son opcionales y podés completarlos más tarde desde el
+          CRM.
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField
@@ -411,15 +449,32 @@ export function CRMClient({ initialData }: CRMClientProps) {
         <TextField label="Teléfono" name="phone" />
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField label="Cargo / Rol" name="position" />
-          <TextField label="Empresa" name="companyName" placeholder="Nombre de la empresa" />
+          <TextField
+            label="Empresa"
+            name="companyName"
+            placeholder="Nombre de la empresa"
+          />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField label="Industria" name="companyIndustry" />
-          <TextField label="Sitio web" name="companyWebsite" type="url" placeholder="https://" />
+          <TextField
+            label="Sitio web"
+            name="companyWebsite"
+            type="url"
+            placeholder="https://"
+          />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <SelectField label="Estado" name="status" options={CONTACT_STATUS_OPTIONS} />
-          <TextField label="Fuente" name="source" placeholder="Instagram, Referido, etc." />
+          <SelectField
+            label="Estado"
+            name="status"
+            options={CONTACT_STATUS_OPTIONS}
+          />
+          <TextField
+            label="Fuente"
+            name="source"
+            placeholder="Instagram, Referido, etc."
+          />
         </div>
         <TextAreaField label="Notas" name="notes" rows={3} />
       </ActionModal>
@@ -440,14 +495,30 @@ export function CRMClient({ initialData }: CRMClientProps) {
             name="contactId"
             required
             options={contacts.map((contact) => ({
-              label: `${contact.firstName} ${contact.lastName}`,
+              label: getContactDisplayName(contact),
               value: contact.id,
             }))}
           />
-          <SelectField label="Etapa" name="stage" options={DEAL_STAGE_OPTIONS} />
+          <SelectField
+            label="Etapa"
+            name="stage"
+            options={DEAL_STAGE_OPTIONS}
+          />
           <div className="grid gap-4 sm:grid-cols-2">
-            <TextField label="Valor estimado" name="value" type="number" min="0" step="1000" />
-            <TextField label="Probabilidad (%)" name="probability" type="number" min="0" max="100" />
+            <TextField
+              label="Valor estimado"
+              name="value"
+              type="number"
+              min="0"
+              step="1000"
+            />
+            <TextField
+              label="Probabilidad (%)"
+              name="probability"
+              type="number"
+              min="0"
+              max="100"
+            />
           </div>
           <TextField label="Cierre esperado" name="expectedClose" type="date" />
           <TextAreaField label="Notas" name="notes" rows={3} />
@@ -468,15 +539,23 @@ export function CRMClient({ initialData }: CRMClientProps) {
           <TextAreaField label="Descripción" name="description" rows={3} />
           <TextField label="Vencimiento" name="dueDate" type="date" />
           <div className="grid gap-4 sm:grid-cols-2">
-            <SelectField label="Estado" name="status" options={TASK_STATUS_OPTIONS} />
-            <SelectField label="Prioridad" name="priority" options={TASK_PRIORITY_OPTIONS} />
+            <SelectField
+              label="Estado"
+              name="status"
+              options={TASK_STATUS_OPTIONS}
+            />
+            <SelectField
+              label="Prioridad"
+              name="priority"
+              options={TASK_PRIORITY_OPTIONS}
+            />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <SelectField
               label="Contacto"
               name="contactId"
               options={contacts.map((contact) => ({
-                label: `${contact.firstName} ${contact.lastName}`,
+                label: getContactDisplayName(contact),
                 value: contact.id,
               }))}
             />
@@ -509,13 +588,17 @@ export function CRMClient({ initialData }: CRMClientProps) {
             required
           />
           <TextAreaField label="Resumen" name="summary" rows={3} required />
-          <TextField label="Fecha y hora" name="occurredAt" type="datetime-local" />
+          <TextField
+            label="Fecha y hora"
+            name="occurredAt"
+            type="datetime-local"
+          />
           <div className="grid gap-4 sm:grid-cols-2">
             <SelectField
               label="Contacto"
               name="contactId"
               options={contacts.map((contact) => ({
-                label: `${contact.firstName} ${contact.lastName}`,
+                label: getContactDisplayName(contact),
                 value: contact.id,
               }))}
             />
@@ -542,7 +625,13 @@ interface MetricCardProps {
   Icon: LucideIcon;
 }
 
-function MetricCard({ label, value, highlight = false, note, Icon }: MetricCardProps) {
+function MetricCard({
+  label,
+  value,
+  highlight = false,
+  note,
+  Icon,
+}: MetricCardProps) {
   const accentLine = highlight
     ? "from-rose-500 via-rose-400 to-orange-300"
     : "from-indigo-500 via-sky-500 to-emerald-400";
@@ -563,14 +652,23 @@ function MetricCard({ label, value, highlight = false, note, Icon }: MetricCardP
           </p>
           <p className="mt-2 text-2xl font-semibold text-gray-900">{value}</p>
         </div>
-        <span className={`flex h-10 w-10 items-center justify-center rounded-full ${iconStyles}`}>
+        <span
+          className={`flex h-10 w-10 items-center justify-center rounded-full ${iconStyles}`}
+        >
           <Icon className="h-5 w-5" />
         </span>
       </div>
       {note ? (
-        <p className={`mt-3 text-xs ${highlight ? "text-rose-600" : "text-slate-500"}`}>{note}</p>
+        <p
+          className={`mt-3 text-xs ${highlight ? "text-rose-600" : "text-slate-500"}`}
+        >
+          {note}
+        </p>
       ) : null}
-      <div className={`absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r ${accentLine}`} aria-hidden />
+      <div
+        className={`absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r ${accentLine}`}
+        aria-hidden
+      />
     </div>
   );
 }
@@ -583,10 +681,19 @@ interface ActionLauncherProps {
   ctaLabel?: string;
 }
 
-function ActionLauncher({ title, description, onClick, Icon, ctaLabel = "Crear registro" }: ActionLauncherProps) {
+function ActionLauncher({
+  title,
+  description,
+  onClick,
+  Icon,
+  ctaLabel = "Crear registro",
+}: ActionLauncherProps) {
   return (
     <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg">
-      <div className="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-slate-200/40 blur-2xl" aria-hidden />
+      <div
+        className="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-slate-200/40 blur-2xl"
+        aria-hidden
+      />
       <div className="relative space-y-4">
         <div className="flex items-start gap-4">
           <span className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-900 text-white shadow-sm">
@@ -698,7 +805,7 @@ function ActionModal({
         </form>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }
 
@@ -720,7 +827,8 @@ function TextField({ label, name, ...props }: TextFieldProps) {
   );
 }
 
-interface TextAreaFieldProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
+interface TextAreaFieldProps
+  extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label: string;
   name: string;
 }
@@ -745,7 +853,12 @@ interface SelectFieldProps {
   required?: boolean;
 }
 
-function SelectField({ label, name, options, required = false }: SelectFieldProps) {
+function SelectField({
+  label,
+  name,
+  options,
+  required = false,
+}: SelectFieldProps) {
   return (
     <label className="block text-sm">
       <span className="text-gray-700">{label}</span>
@@ -799,7 +912,9 @@ function PipelineView({ deals, onDelete }: PipelineViewProps) {
           className="rounded-2xl border border-amber-100 bg-white/80 p-5 shadow-sm backdrop-blur transition hover:shadow-md"
         >
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-900">{translateLabel(stage)}</h2>
+            <h2 className="text-sm font-semibold text-gray-900">
+              {translateLabel(stage)}
+            </h2>
             <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">
               {dealsInStage.length}
             </span>
@@ -807,7 +922,8 @@ function PipelineView({ deals, onDelete }: PipelineViewProps) {
           <div className="mt-4 space-y-3">
             {dealsInStage.length === 0 ? (
               <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50/50 px-4 py-5 text-center text-xs text-amber-700">
-                Todavía no hay oportunidades en esta etapa. ¡Momento ideal para prospectar!
+                Todavía no hay oportunidades en esta etapa. ¡Momento ideal para
+                prospectar!
               </div>
             ) : (
               dealsInStage.map((deal) => (
@@ -817,9 +933,11 @@ function PipelineView({ deals, onDelete }: PipelineViewProps) {
                 >
                   <header className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="font-semibold text-gray-900">{deal.title}</p>
+                      <p className="font-semibold text-gray-900">
+                        {deal.title}
+                      </p>
                       <p className="text-xs text-gray-500">
-                        {deal.contact.firstName} {deal.contact.lastName}
+                        {getContactDisplayName(deal.contact)}
                       </p>
                     </div>
                     <button
@@ -846,7 +964,11 @@ function PipelineView({ deals, onDelete }: PipelineViewProps) {
                     {deal.expectedClose ? (
                       <div>
                         <dt className="font-medium text-gray-500">Cierre</dt>
-                        <dd>{new Date(deal.expectedClose).toLocaleDateString("es-AR")}</dd>
+                        <dd>
+                          {new Date(deal.expectedClose).toLocaleDateString(
+                            "es-AR",
+                          )}
+                        </dd>
                       </div>
                     ) : null}
                   </dl>
@@ -885,7 +1007,10 @@ function ContactsView({ contacts, onDelete }: ContactsViewProps) {
         <tbody className="divide-y divide-amber-50/80">
           {contacts.length === 0 ? (
             <tr>
-              <td colSpan={5} className="px-4 py-6 text-center text-sm text-gray-600">
+              <td
+                colSpan={5}
+                className="px-4 py-6 text-center text-sm text-gray-600"
+              >
                 Aún no cargaste contactos.
               </td>
             </tr>
@@ -894,9 +1019,11 @@ function ContactsView({ contacts, onDelete }: ContactsViewProps) {
               <tr key={contact.id} className="hover:bg-amber-50/70">
                 <td className="px-4 py-3">
                   <div className="font-semibold text-gray-900">
-                    {contact.firstName} {contact.lastName}
+                    {getContactDisplayName(contact)}
                   </div>
-                  <div className="text-xs text-gray-500">{contact.phone ?? "Sin teléfono"}</div>
+                  <div className="text-xs text-gray-500">
+                    {contact.phone ?? "Sin teléfono"}
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-sm text-gray-600">
                   {contact.company?.name ?? "Independiente"}
@@ -904,13 +1031,15 @@ function ContactsView({ contacts, onDelete }: ContactsViewProps) {
                 <td className="px-4 py-3">
                   <span
                     className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${getContactStatusBadgeClasses(
-                      contact.status
+                      contact.status,
                     )}`}
                   >
                     {translateLabel(contact.status)}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-600">{contact.email}</td>
+                <td className="px-4 py-3 text-sm text-gray-600">
+                  {contact.email}
+                </td>
                 <td className="px-4 py-3 text-right">
                   <button
                     onClick={() => onDelete("contacts", contact.id)}
@@ -951,9 +1080,13 @@ function TasksView({ tasks, onDelete }: TasksViewProps) {
           >
             <header className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-sm font-semibold text-gray-900">{task.title}</h3>
+                <h3 className="text-sm font-semibold text-gray-900">
+                  {task.title}
+                </h3>
                 {task.description ? (
-                  <p className="mt-1 text-xs text-gray-600">{task.description}</p>
+                  <p className="mt-1 text-xs text-gray-600">
+                    {task.description}
+                  </p>
                 ) : null}
               </div>
               <button
@@ -965,10 +1098,14 @@ function TasksView({ tasks, onDelete }: TasksViewProps) {
               </button>
             </header>
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${getTaskStatusBadgeClasses(task.status)}`}>
+              <span
+                className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${getTaskStatusBadgeClasses(task.status)}`}
+              >
                 {translateLabel(task.status)}
               </span>
-              <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${getPriorityBadgeClasses(task.priority)}`}>
+              <span
+                className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${getPriorityBadgeClasses(task.priority)}`}
+              >
                 {translateLabel(task.priority)}
               </span>
               {isTaskOverdue(task) ? (
@@ -988,7 +1125,9 @@ function TasksView({ tasks, onDelete }: TasksViewProps) {
                 <div>
                   <dt className="font-medium text-gray-500">Contacto</dt>
                   <dd>
-                    {task.contact.firstName} {task.contact.lastName}
+                    {task.contact
+                      ? getContactDisplayName(task.contact)
+                      : "Contacto sin asignar"}
                   </dd>
                 </div>
               ) : null}
@@ -1050,14 +1189,14 @@ function InteractionsView({ interactions, onDelete }: InteractionsViewProps) {
                   Eliminar
                 </button>
               </header>
-              <p className="mt-3 text-sm text-gray-700">{interaction.summary}</p>
+              <p className="mt-3 text-sm text-gray-700">
+                {interaction.summary}
+              </p>
               <dl className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-gray-600">
                 {interaction.contact ? (
                   <div>
                     <dt className="font-medium text-gray-500">Contacto</dt>
-                    <dd>
-                      {interaction.contact.firstName} {interaction.contact.lastName}
-                    </dd>
+                    <dd>{getContactDisplayName(interaction.contact)}</dd>
                   </div>
                 ) : null}
                 {interaction.deal ? (
@@ -1104,7 +1243,10 @@ interface DealProgressProps {
 function DealProgress({ stage }: DealProgressProps) {
   const currentIndex = PIPELINE_STAGES.indexOf(stage);
   const totalStages = PIPELINE_STAGES.length - 1;
-  const progress = totalStages <= 0 || currentIndex < 0 ? 0 : Math.round((currentIndex / totalStages) * 100);
+  const progress =
+    totalStages <= 0 || currentIndex < 0
+      ? 0
+      : Math.round((currentIndex / totalStages) * 100);
 
   return (
     <div className="mt-4">
@@ -1119,7 +1261,10 @@ function DealProgress({ stage }: DealProgressProps) {
         />
       </div>
       <p className="mt-2 text-[11px] text-gray-500">
-        En etapa <span className="font-semibold text-gray-700">{translateLabel(stage)}</span>
+        En etapa{" "}
+        <span className="font-semibold text-gray-700">
+          {translateLabel(stage)}
+        </span>
       </p>
     </div>
   );

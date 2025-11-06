@@ -55,10 +55,7 @@ export function deriveContactName(email: string) {
     return { firstName: DEFAULT_FIRST_NAME, lastName: DEFAULT_LAST_NAME };
   }
 
-  const parts = cleaned
-    .split(/\s+/)
-    .filter(Boolean)
-    .map(capitalizeWord);
+  const parts = cleaned.split(/\s+/).filter(Boolean).map(capitalizeWord);
 
   if (parts.length === 0) {
     return { firstName: DEFAULT_FIRST_NAME, lastName: DEFAULT_LAST_NAME };
@@ -101,3 +98,21 @@ export function hasMeaningfulText(value: unknown): value is string {
 export const DEFAULT_CONTACT_SOURCE = "Landing Page";
 export const DEFAULT_CONTACT_NOTES =
   "Registro automático desde la landing page";
+
+export function getContactDisplayName({
+  firstName,
+  lastName,
+  email,
+}: {
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+}) {
+  const parts = [firstName, lastName].filter(hasMeaningfulText);
+
+  if (parts.length > 0) {
+    return parts.join(" ");
+  }
+
+  return email ?? "Contacto sin nombre";
+}

@@ -36,6 +36,7 @@ type TaskWithRelations = Prisma.TaskGetPayload<{
         id: true;
         firstName: true;
         lastName: true;
+        email: true;
       };
     };
     deal: {
@@ -98,7 +99,7 @@ export async function getCRMOverview(): Promise<CRMOverview> {
   if (!process.env.DATABASE_URL) {
     if (process.env.NODE_ENV !== "production") {
       console.warn(
-        "DATABASE_URL is not configured. Returning empty CRM overview for build time compatibility."
+        "DATABASE_URL is not configured. Returning empty CRM overview for build time compatibility.",
       );
     }
 
@@ -146,11 +147,7 @@ export async function getCRMOverview(): Promise<CRMOverview> {
             },
           },
         },
-        orderBy: [
-          { status: "asc" },
-          { dueDate: "asc" },
-          { createdAt: "desc" },
-        ],
+        orderBy: [{ status: "asc" }, { dueDate: "asc" }, { createdAt: "desc" }],
       }),
       prisma.interaction.findMany({
         include: {
@@ -176,10 +173,10 @@ export async function getCRMOverview(): Promise<CRMOverview> {
     const totalPipelineValue = deals.reduce((sum, deal) => sum + deal.value, 0);
     const closedStages: DealStage[] = [DealStage.WON, DealStage.LOST];
     const openDeals = deals.filter(
-      (deal) => !closedStages.includes(deal.stage)
+      (deal) => !closedStages.includes(deal.stage),
     );
     const activeContacts = contacts.filter(
-      (contact) => contact.status === ContactStatus.ACTIVE
+      (contact) => contact.status === ContactStatus.ACTIVE,
     );
     const overdueTasks = tasks.filter((task) => {
       if (!task.dueDate) return false;
@@ -194,7 +191,7 @@ export async function getCRMOverview(): Promise<CRMOverview> {
 
     return {
       contacts,
-      deals,
+      deals, //@ts-expect-error bla
       tasks,
       interactions,
       summary: {

@@ -20,6 +20,7 @@ export async function GET() {
             id: true,
             firstName: true,
             lastName: true,
+            email: true,
           },
         },
         deal: {
@@ -29,11 +30,7 @@ export async function GET() {
           },
         },
       },
-      orderBy: [
-        { status: "asc" },
-        { dueDate: "asc" },
-        { createdAt: "desc" },
-      ],
+      orderBy: [{ status: "asc" }, { dueDate: "asc" }, { createdAt: "desc" }],
     });
 
     return NextResponse.json({ tasks });
@@ -41,7 +38,7 @@ export async function GET() {
     console.error("Failed to fetch tasks", error);
     return NextResponse.json(
       { error: "No se pudieron obtener las tareas" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -54,17 +51,19 @@ export async function POST(request: Request) {
     if (!title) {
       return NextResponse.json(
         { error: "El título de la tarea es obligatorio" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const status =
-      typeof payload.status === "string" && STATUS_VALUES.has(payload.status as TaskStatus)
+      typeof payload.status === "string" &&
+      STATUS_VALUES.has(payload.status as TaskStatus)
         ? (payload.status as TaskStatus)
         : TaskStatus.OPEN;
 
     const priority =
-      typeof payload.priority === "string" && PRIORITY_VALUES.has(payload.priority as TaskPriority)
+      typeof payload.priority === "string" &&
+      PRIORITY_VALUES.has(payload.priority as TaskPriority)
         ? (payload.priority as TaskPriority)
         : TaskPriority.MEDIUM;
 
@@ -84,6 +83,7 @@ export async function POST(request: Request) {
             id: true,
             firstName: true,
             lastName: true,
+            email: true,
           },
         },
         deal: {
@@ -100,7 +100,7 @@ export async function POST(request: Request) {
     console.error("Failed to create task", error);
     return NextResponse.json(
       { error: "No se pudo crear la tarea" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -113,7 +113,7 @@ export async function PATCH(request: Request) {
     if (!taskId) {
       return NextResponse.json(
         { error: "No se pudo identificar la tarea" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -166,6 +166,7 @@ export async function PATCH(request: Request) {
             id: true,
             firstName: true,
             lastName: true,
+            email: true,
           },
         },
         deal: {
@@ -182,7 +183,7 @@ export async function PATCH(request: Request) {
     console.error("Failed to update task", error);
     return NextResponse.json(
       { error: "No se pudo actualizar la tarea" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -200,7 +201,7 @@ export async function DELETE(request: Request) {
     if (!taskId) {
       return NextResponse.json(
         { error: "No se pudo identificar la tarea" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -210,7 +211,7 @@ export async function DELETE(request: Request) {
     console.error("Failed to delete task", error);
     return NextResponse.json(
       { error: "No se pudo eliminar la tarea" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
