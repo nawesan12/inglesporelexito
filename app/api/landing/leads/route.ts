@@ -11,6 +11,64 @@ import {
 } from "@/lib/contact-utils";
 import { prisma } from "@/lib/prisma";
 
+function buildTransientContact({
+  email,
+  firstName,
+  lastName,
+  source,
+  notes,
+}: {
+  email: string;
+  firstName: string;
+  lastName: string;
+  source: string;
+  notes: string;
+}) {
+  const now = new Date().toISOString();
+
+  return {
+    id: `temp-${crypto.randomUUID()}`,
+    email,
+    firstName,
+    lastName,
+    source,
+    notes,
+    status: ContactStatus.LEAD,
+    createdAt: now,
+    updatedAt: now,
+  } as const;
+}
+
+function respondWithoutPersistence({
+  email,
+  firstName,
+  lastName,
+  source,
+  notes,
+}: {
+  email: string;
+  firstName: string;
+  lastName: string;
+  source: string;
+  notes: string;
+}) {
+  const contact = buildTransientContact({
+    email,
+    firstName,
+    lastName,
+    source,
+    notes,
+  });
+
+  return NextResponse.json(
+    {
+      contact,
+      persisted: false,
+    },
+    { status: 201 },
+  );
+}
+
 export async function POST(request: Request) {
   try {
     const payload = await request.json().catch(() => ({}));
@@ -42,28 +100,35 @@ export async function POST(request: Request) {
         );
       }
 
-      return NextResponse.json(
-        {
-          contact: {
-            id: `temp-${crypto.randomUUID()}`,
-            email,
-            firstName,
-            lastName,
-            source,
-            notes,
-            status: ContactStatus.LEAD,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-          persisted: false,
-        },
-        { status: 201 },
-      );
+      return respondWithoutPersistence({
+        email,
+        firstName,
+        lastName,
+        source,
+        notes,
+      });
     }
 
-    const existing = await prisma.contact.findUnique({
-      where: { email },
-    });
+    let existing = null;
+
+    try {
+      existing = await prisma.contact.findUnique({
+        where: { email },
+      });
+    } catch (error) {
+      console.error(
+        "Failed to check for existing landing lead. Returning transient contact.",
+        error,
+      );
+
+      return respondWithoutPersistence({
+        email,
+        firstName,
+        lastName,
+        source,
+        notes,
+      });
+    }
 
     if (existing) {
       const updateData: Record<string, string> = {};
@@ -95,29 +160,59 @@ export async function POST(request: Request) {
       }
 
       if (Object.keys(updateData).length === 0) {
-        return NextResponse.json({ contact: existing });
+        return NextResponse.json({ contact: existing, persisted: true });
       }
 
-      const contact = await prisma.contact.update({
-        where: { id: existing.id },
-        data: updateData,
-      });
+      try {
+        const contact = await prisma.contact.update({
+          where: { id: existing.id },
+          data: updateData,
+        });
 
-      return NextResponse.json({ contact });
+        return NextResponse.json({ contact, persisted: true });
+      } catch (error) {
+        console.error(
+          "Failed to update existing landing lead. Returning transient contact.",
+          error,
+        );
+
+        return respondWithoutPersistence({
+          email,
+          firstName,
+          lastName,
+          source,
+          notes,
+        });
+      }
     }
 
-    const contact = await prisma.contact.create({
-      data: {
+    try {
+      const contact = await prisma.contact.create({
+        data: {
+          email,
+          firstName,
+          lastName,
+          source,
+          notes,
+          status: ContactStatus.LEAD,
+        },
+      });
+
+      return NextResponse.json({ contact, persisted: true }, { status: 201 });
+    } catch (error) {
+      console.error(
+        "Failed to persist landing lead. Returning transient contact.",
+        error,
+      );
+
+      return respondWithoutPersistence({
         email,
         firstName,
         lastName,
         source,
         notes,
-        status: ContactStatus.LEAD,
-      },
-    });
-
-    return NextResponse.json({ contact }, { status: 201 });
+      });
+    }
   } catch (error) {
     console.error("Failed to register landing lead", error);
     return NextResponse.json(
