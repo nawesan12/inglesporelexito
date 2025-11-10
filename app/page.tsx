@@ -668,7 +668,7 @@ export default function Page() {
                 },
                 {
                   q: "¿Cuántos alumnos hay por grupo?",
-                  a: "Mantenemos los grupos reducidos (máximo 6 alumnos) para garantizar que todos tengan múltiples oportunidades de hablar y participar en cada sesión.",
+                  a: "Mantenemos los grupos reducidos (máximo 8 alumnos) para garantizar que todos tengan múltiples oportunidades de hablar y participar en cada sesión.",
                 },
                 {
                   q: "¿Vamos a ver gramática?",
