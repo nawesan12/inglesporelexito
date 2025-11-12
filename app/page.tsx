@@ -205,7 +205,7 @@ export default function Page() {
               variants={fadeUp}
               type="button"
               onClick={handleOpenModal}
-              className="text-sm font-semibold leading-6 text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+              className="text-2xl font-semibold leading-6 text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors"
             >
               Reservar mi lugar
             </motion.button>
@@ -248,7 +248,7 @@ export default function Page() {
                   variants={fadeUp}
                   type="button"
                   onClick={handleOpenModal}
-                  className="rounded-md bg-accent px-5 py-3 text-sm font-semibold text-gray-900 shadow-sm hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-yellow-500 transition-all transform hover:scale-105"
+                  className="rounded-md bg-accent px-8 py-4 text-2xl font-semibold text-gray-900 shadow-sm hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-yellow-500 transition-all transform hover:scale-105"
                 >
                   Reservar mi lugar
                 </motion.button>
@@ -724,7 +724,7 @@ export default function Page() {
             <button
               type="button"
               onClick={handleOpenModal}
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-accent-hover transition"
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-lg font-semibold text-gray-900 hover:bg-accent-hover transition"
             >
               <MessageCircle className="h-4 w-4" /> Reservar mi lugar
             </button>
